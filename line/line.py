@@ -47,7 +47,7 @@ class Context:
         self.display.dispatch(block=True)
         self.display.roundtrip()
 
-        assert all((self.compositor, self.shell, self.shm)), (self.compositor, self.shell, self.shm)
+        assert all((self.compositor, self.shm)), (self.compositor, self.shell, self.shm)
 
     def run(self):
         while self.display.dispatch(block=True) != -1:
@@ -105,10 +105,11 @@ class Window(ABC):
 
     def create(self) -> None:
         self.surface = self.ctx.compositor.create_surface()
-        self.shell_surface = self.ctx.shell.get_shell_surface(self.surface)
-        self.shell_surface.set_toplevel()
-        self.shell_surface.set_title(self.title)
-        self.shell_surface.dispatcher["ping"] = lambda s, i: s.pong(i)
+        if self.ctx.shell is not None:
+            self.shell_surface = self.ctx.shell.get_shell_surface(self.surface)
+            self.shell_surface.set_toplevel()
+            self.shell_surface.set_title(self.title)
+            self.shell_surface.dispatcher["ping"] = lambda s, i: s.pong(i)
         self.buffer = self.create_buffer()
         self.redraw()
 
