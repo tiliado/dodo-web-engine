@@ -12,7 +12,7 @@ from pywayland.protocol.wayland import WlCompositor, WlShell, WlShm
 from pywayland.utils import AnonymousFile
 
 # weston --debug -S wayland-weston
-WAYLAND_DISPLAY = os.environ.get("WAYLAND_DISPLAY", "wayland-weston")
+WAYLAND_DISPLAY = os.environ.get("DEMO_DISPLAY", os.environ.get("WAYLAND_DISPLAY", "wayland-weston"))
 WIDTH = 480
 HEIGHT = 256
 MARGIN = 10
