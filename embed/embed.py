@@ -26,6 +26,7 @@ class Context:
         self.compositor = None
         self.shm = None
         self.embeder = None
+        self.views = []
 
     def __del__(self):
         print("Disconnecting from", WAYLAND_DISPLAY)
@@ -60,6 +61,7 @@ class Context:
             print("got embeder")
             self.embeder = registry.bind(object_id, NuvEmbeder, version)
             self.embeder.dispatcher["ping"] = self.on_ping
+            self.embeder.dispatcher["view_request"] = self.on_new_view
 
     def on_global_object_removed(self, registry, object_id):
         print("Global object removed:", registry, object_id)
@@ -69,6 +71,19 @@ class Context:
 
     def on_ping(self, embeder, serial):
         embeder.pong(serial)
+
+    def on_new_view(self, embeder, serial, width, height, scale):
+        print("Request new view", serial, width, height, scale)
+        view = embeder.new_view(serial, width, height, scale)
+        view.dispatcher["resize"] = self.on_resize
+        view.dispatcher["rescale"] = self.on_rescale
+        self.views.append(view)
+
+    def on_resize(self, view, width, height):
+        print("resize", width, height)
+
+    def on_rescale(self, view, scale):
+        print("rescale", scale)
 
 
 def main():
