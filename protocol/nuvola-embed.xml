@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<protocol name="nuvola_embed">
+
+  <copyright>
+    Copyright © 2020 Jiří Janoušek
+  </copyright>
+
+  <interface name="nuv_embeder" version="1">
+    <description summary="create nuvola embed">...</description>
+    <request name="pong">
+      <description summary="respond to a ping event">...</description>
+      <arg name="serial" type="uint" summary="serial of the ping event"/>
+    </request>
+
+    <event name="ping">
+      <description summary="check if the client is alive">...</description>
+      <arg name="serial" type="uint" summary="pass this to the pong request"/>
+    </event>
+
+  </interface>
+</protocol>

@@ -6,10 +6,16 @@ public class Display: GLib.Object {
     private unowned MainContext? context;
     private uint context_source_id;
     private Listener display_destroyed = new Listener();
+    private Listener client_created_listenet = new Listener();
+    private Embeder? embeder;
+    private HashTable<unowned Wl.Client, Listener> clients;
 
     public Display(owned Wl.Display wl_display) {
+        clients = new HashTable<unowned Wl.Client, Listener>(direct_hash, direct_equal);
         display_destroyed.connect(on_display_destroyed);
         wl_display.add_destroy_listener(ref display_destroyed.listener);
+        client_created_listenet.connect(on_client_created);
+        wl_display.add_client_created_listener(ref client_created_listenet.listener);
         this.loop = wl_display.get_event_loop();
         this.wl_display = (owned) wl_display;
     }
@@ -19,6 +25,8 @@ public class Display: GLib.Object {
     }
 
     public signal void destroyed();
+    public signal void client_created(Wl.Client client);
+    public signal void client_destroyed(Wl.Client client);
 
     public bool dispatch() {
         if (wl_display == null) {
@@ -61,10 +69,33 @@ public class Display: GLib.Object {
         }
     }
 
+    public void init_embeder() {
+        embeder = new Embeder(this);
+    }
+
     private void on_display_destroyed(Listener listener, void* data) {
         debug("Display destroyed");
         destroyed();
         listener.disconnect();
+    }
+
+    private void on_client_created(Listener listener, void* data) {
+        unowned Wl.Client client = (Wl.Client) data;
+        debug("New %s.", Utils.client_info(client));
+        var client_listener = new Listener();
+        client_listener.connect(on_client_destroyed);
+        client.add_destroy_listener(ref client_listener.listener);
+        clients[client] = (owned) client_listener;
+        client_created(client);
+    }
+
+    private void on_client_destroyed(Listener listener, void* data) {
+        unowned Wl.Client client = (Wl.Client) data;
+        debug("Destroyed %s.", Utils.client_info(client));
+        client_destroyed(client);
+        listener.disconnect();
+        assert(client in clients);
+        clients.remove(client);
     }
 }
 
