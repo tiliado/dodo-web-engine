@@ -14,12 +14,14 @@ void main(string[] args) {
     var window = new Gtk.Window();
     window.set_default_size(400, 300);
     window.show_all();
-    debug("Window %d×%d factor %d.", window.get_allocated_width(), window.get_allocated_height(), window.scale_factor);
+
     window.delete_event.connect(() => {
         display.quit();
         Gtk.main_quit();
         return false;
     });
+
+    display.embeder.add_view(window);
 
     Gtk.main();
 }

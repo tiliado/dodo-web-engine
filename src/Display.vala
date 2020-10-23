@@ -2,12 +2,13 @@ namespace Embed {
 
 public class Display: GLib.Object {
     public Wl.Display? wl_display;
+    public Embeder? embeder;
     private unowned Wl.EventLoop loop;
     private unowned MainContext? context;
     private uint context_source_id;
     private Listener display_destroyed = new Listener();
     private Listener client_created_listenet = new Listener();
-    private Embeder? embeder;
+
     private HashTable<unowned Wl.Client, Listener> clients;
 
     public Display(owned Wl.Display wl_display) {
