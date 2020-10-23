@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 import os
 import mmap
-import random
 import signal
 from abc import ABC, abstractmethod
-from itertools import cycle, product
 from typing import Union
 
 from pywayland.client import Display
 from pywayland.protocol.wayland import WlCompositor, WlShell, WlShm
 from pywayland.utils import AnonymousFile
+
+from lib.paint import LinePainter
 
 # weston --debug -S wayland-weston
 WAYLAND_DISPLAY = os.environ.get("DEMO_DISPLAY", os.environ.get("WAYLAND_DISPLAY", "wayland-weston"))
@@ -130,35 +130,10 @@ class Window(ABC):
 class LineWindow(Window):
     def __init__(self, ctx: Context, width: int, height: int, title: str = None, margin: int = MARGIN):
         super().__init__(ctx, width, height, title)
-        self.margin = margin
-        self.line_pos = height // 2
-        self.line_speed = random.choice([-2, -1, 1, 2])
-        self.colors = [bytes(x) + b"\xff" for x in product([i * 16 + i for i in range(16)], repeat=3)]
-        self.color = None
-        self.pick_color()
-
-    def pick_color(self):
-        while (color := random.choice(self.colors)) == self.color:
-            pass
-        self.color = color
+        self.painter = LinePainter(width, height, margin)
 
     def paint(self, time: int):
-        m = self.shm_data
-
-        if not time:
-            # Clear
-            m.seek(0)
-            m.write(b"\xff" * 4 * self.width * self.height)
-
-        # Draw progressing line
-        m.seek((self.line_pos * self.width + self.margin) * 4)
-        m.write(self.color * (self.width - 2 * self.margin))
-        self.line_pos += self.line_speed
-
-        # Reverse and change color
-        if self.line_pos >= self.height - self.margin or self.line_pos <= self.margin:
-            self.line_speed = -self.line_speed
-            self.pick_color()
+        self.painter.paint(self.shm_data, time)
 
 
 def main():

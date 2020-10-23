@@ -11,5 +11,8 @@ venv:
 	$(VENV)/bin/python3 -m pip install -U pip wheel setuptools
 	$(VENV)/bin/python3 -m pip install -U -r requirements.txt
 
+run-venv:
+	PYTHONPATH=.. $(VENV)/bin/python3 line.py $(ARGS)
+
 run:
-	$(VENV)/bin/python3 line.py $(ARGS)
+	PYTHONPATH=.. python3 line.py $(ARGS)
