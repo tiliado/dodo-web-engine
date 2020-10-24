@@ -39,21 +39,23 @@ void main()
 
 
 public class View : Gtk.GLArea {
+    private const int ICON_SIZE = 256;
     public uint frames_per_second {get; private set; default = 0;}
     private GLuint gl_program = 0;
     private GLuint gl_element_buffer = 0;
     private GLuint gl_vertex_buffer = 0;
     private GLuint gl_vertex_array = 0;
     private GLuint gl_texture_loading_icon = 0;
-    private Gdk.Pixbuf? loading_icon = null;
+    private GLuint gl_texture_crashed_icon = 0;
     private int width = 0;
     private int height = 0;
     private Surface? surface;
     private Embeder embeder;
     private uint frames = 0;
+    private bool crashed = false;
 
     public Gdk.RGBA background_color {
-        get; set; default = Gdk.RGBA() {red = 0.2, green = 0.2, blue = 0.2, alpha = 1.0};
+        get; set; default = Gdk.RGBA() {red = 0.1, green = 0.1, blue = 0.1, alpha = 1.0};
     }
 
     public View(Embeder embeder) {
@@ -101,6 +103,7 @@ public class View : Gtk.GLArea {
         stderr.printf("Wayland view render\n");
 
         if (surface != null && surface.buffer != null) {
+            crashed = true;
             draw_texture(surface.buffer.get_texture(), surface.buffer.width, surface.buffer.height);
             frames++;
         } else {
@@ -248,14 +251,19 @@ public class View : Gtk.GLArea {
 
         Gtk.IconTheme icons = Gtk.IconTheme.get_default();
         try {
-            loading_icon = icons.load_icon("image-loading", 256, 0);
-            int width = loading_icon.width;
-            int height = loading_icon.height;
-            if (!loading_icon.get_has_alpha()) {
-                loading_icon = loading_icon.add_alpha(false, 0, 0, 0);
+            Gdk.Pixbuf? icon = icons.load_icon("image-loading", ICON_SIZE, 0);
+            if (!icon.get_has_alpha()) {
+                icon = icon.add_alpha(false, 0, 0, 0);
             }
-            void* data = (void*) loading_icon.read_pixels();
-            gl_texture_loading_icon = Textures.load_from_pixels(data, 0, width, height, width * 4);
+            void* data = (void*) icon.read_pixels();
+            gl_texture_loading_icon = Textures.load_from_pixels(data, 0, icon.width, icon.height, icon.width * 4);
+
+            icon = icons.load_icon("face-sick-symbolic", ICON_SIZE, 0);
+            if (!icon.get_has_alpha()) {
+                icon = icon.add_alpha(false, 0, 0, 0);
+            }
+            data = (void*) icon.read_pixels();
+            gl_texture_crashed_icon = Textures.load_from_pixels(data, 0, icon.width, icon.height, icon.width * 4);
         } catch (GLib.Error e) {
             warning("Cannot load icon: %s", e.message);
         }
@@ -278,6 +286,10 @@ public class View : Gtk.GLArea {
 
         if (gl_texture_loading_icon != 0) {
             glDeleteTextures(1, {gl_texture_loading_icon});
+        }
+
+        if (gl_texture_crashed_icon != 0) {
+            glDeleteTextures(1, {gl_texture_crashed_icon});
         }
 
         glBindVertexArray(0);
@@ -311,9 +323,9 @@ public class View : Gtk.GLArea {
         glClear(GL_COLOR_BUFFER_BIT);
 
         if (texture_id == 0) {
-            texture_id = gl_texture_loading_icon;
-            width = loading_icon.width;
-            height = loading_icon.height;
+            texture_id = crashed ? gl_texture_crashed_icon : gl_texture_loading_icon;
+            width = ICON_SIZE;
+            height = ICON_SIZE;
         } else {
             if (width <= 0) {
                 width = this.width;
