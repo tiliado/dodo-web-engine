@@ -9,7 +9,7 @@ public class Embeder : GLib.Object {
     public Wl.Global glob;
     private unowned Display display;
     private HashTable<unowned Wl.Client, Nuv.Embeder> bound;
-    private HashTable<Gtk.Widget, Adaptor> widgets;
+    private HashTable<View, Adaptor> widgets;
     private unowned Wl.Client? client;
     private Compositor compositor;
 
@@ -18,7 +18,7 @@ public class Embeder : GLib.Object {
         this.display = display;
         this.compositor = compositor;
         bound = new HashTable<unowned Wl.Client, Nuv.Embeder>(direct_hash, direct_equal);
-        widgets = new HashTable<Gtk.Widget, Adaptor>(direct_hash, direct_equal);
+        widgets = new HashTable<View, Adaptor>(direct_hash, direct_equal);
         glob = new Wl.Global(display.wl_display, ref Nuv.embeder_interface, VERSION, this, Embeder.bind);
         display.client_destroyed.connect(on_client_destroyed);
         Timeout.add_seconds(10, () => {send_ping(); return true;});
@@ -32,7 +32,7 @@ public class Embeder : GLib.Object {
 
     public signal void destroyed();
 
-    public void add_view(Gtk.Widget widget) {
+    public void add_view(View widget) {
         var adaptor = new Adaptor(display, widget);
         widgets[widget] = adaptor;
         if (client != null) {

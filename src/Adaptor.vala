@@ -2,7 +2,7 @@ namespace Embed {
 
 public class Adaptor : GLib.Object {
     private unowned Display display;
-    public Gtk.Widget widget;
+    public View widget;
     public unowned Wl.Client? client;
     public Nuv.View? view;
     public Surface? surface;
@@ -11,9 +11,8 @@ public class Adaptor : GLib.Object {
     public uint height;
     public uint scale;
     private uint resize_timeout_id = 0;
-    private Gdk.GLContext? gl_context;
 
-    public Adaptor(Display display, Gtk.Widget widget) {
+    public Adaptor(Display display, View widget) {
         this.display = display;
         this.widget = widget;
         widget.size_allocate.connect_after(on_size_allocate);
@@ -50,16 +49,7 @@ public class Adaptor : GLib.Object {
         this.client = client;
         this.view = (owned) view;
         this.surface = surface;
-
-        unowned Gdk.Window? window = widget.get_window();
-        if (gl_context == null && window != null) {
-            try {
-                gl_context = window.create_gl_context();
-            } catch (GLib.Error e) {
-                critical("Failed to create GL context: %s", e.message);
-            }
-        }
-        surface.set_gl_context(gl_context);
+        widget.set_surface(surface);
     }
 
     private void on_size_allocate(Gtk.Allocation alloc) {

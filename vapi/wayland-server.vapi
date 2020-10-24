@@ -102,6 +102,14 @@ public class Buffer : Resource {
     public void send_release();
 }
 
+[CCode(cname="struct wl_resource", free_function="wl_resource_destroy")]
+[Compact]
+public class Callback : Resource {
+    [CCode(cname="wl_resource_create")]
+    public Callback(Client client, ref Interface ifce, int version, uint id);
+    public void send_done(uint data);
+}
+
 [CCode(cname="struct wl_shm_buffer", free_function="")]
 [Compact]
 public class ShmBuffer {

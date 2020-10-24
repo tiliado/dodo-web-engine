@@ -22,7 +22,9 @@ void main(string[] args) {
         return false;
     });
 
-    display.embeder.add_view(window);
+    var view = new View(display.embeder);
+    view.show();
+    window.add(view);
 
     Gtk.main();
 }

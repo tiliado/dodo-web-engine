@@ -76,6 +76,12 @@ public class Surface : GLib.Object {
     }
 
     private static void frame(Wl.Client client, Wl.Resource resource, uint callback_id) {
+        unowned Surface s = Surface.from_resource(resource);
+        var callback_resource = new Wl.Callback(client, ref Wl.callback_interface, CALLBACK_VERSION, callback_id);
+        callback_resource.set_implementation(null, null, null);
+        // FIXME: callback_resource.set_implementation(null, null, callback_handle_resource_destroy);
+        s.pending.frames.prepend((owned) callback_resource);
+        s.pending.update |= Update.FRAME;
     }
 
     private static void set_opaque_region(Wl.Client client, Wl.Resource resource, Wl.Resource region){
@@ -146,6 +152,16 @@ public class Surface : GLib.Object {
             buffer.destroy_texture();
         }
         this.gl_context = gl_context;
+    }
+
+    public void queue_render_frame() {
+        uint time_msec = (uint) (GLib.get_monotonic_time() / 1000);
+        SList<Wl.Callback?> callbacks = (owned) committed.frames;
+        callbacks.reverse();
+        foreach (unowned Wl.Callback? resource in callbacks) {
+            resource.send_done(time_msec);
+        }
+        display.dispatch();
     }
 }
 

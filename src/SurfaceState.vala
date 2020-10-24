@@ -9,6 +9,7 @@ public class SurfaceState {
     public int dy;
     public int scale;
     public unowned Wl.Buffer? buffer;
+    public SList<Wl.Callback?> frames;
     private Listener buffer_destroyed_listener;
 
     public SurfaceState() {
@@ -58,7 +59,9 @@ public class SurfaceState {
             target.scale = scale;
         }
 
-        // TODO: Update.FRAME - frame callbacks
+        if ((this.update & Update.FRAME) != 0) {
+            target.frames = (owned) this.frames;
+        }
 
         target.update = this.update;
         this.update = Update.NONE;

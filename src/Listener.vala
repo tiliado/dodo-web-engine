@@ -25,6 +25,7 @@ public class Listener {
     }
 
     public void disconnect() {
+        assert(handler != null);
         handler = null;
         listener.link.remove();
     }
