@@ -79,9 +79,9 @@ public class Surface : GLib.Object {
 
     private static void frame(Wl.Client client, Wl.Surface wl_surface, uint callback_id) {
         unowned Surface self = Surface.from_resource(wl_surface);
-        var callback_resource = new Wl.Callback(client, ref Wl.callback_interface, CALLBACK_VERSION, callback_id);
-        callback_resource.set_implementation(null, null, null);
-        self.pending.frames.prepend((owned) callback_resource);
+        unowned Wl.Callback callback_resource = Wl.Callback.create(client, ref Wl.callback_interface, CALLBACK_VERSION, callback_id);
+        callback_resource.set_implementation(null, self, on_frame_callback_destroyed);
+        self.pending.frames.prepend(callback_resource);
         self.pending.update |= Update.FRAME;
     }
 
@@ -157,12 +157,20 @@ public class Surface : GLib.Object {
 
     public void queue_render_frame() {
         uint time_msec = (uint) (GLib.get_monotonic_time() / 1000);
-        SList<Wl.Callback?> callbacks = (owned) committed.frames;
+        SList<unowned Wl.Callback?> callbacks = (owned) committed.frames;
         callbacks.reverse();
         foreach (unowned Wl.Callback? resource in callbacks) {
             resource.send_done(time_msec);
+            resource.destroy();
         }
         display.dispatch();
+    }
+
+    private static void on_frame_callback_destroyed(Wl.Resource? resource) {
+        unowned Surface self = Surface.from_resource(resource);
+        unowned Wl.Callback callback_resource = (Wl.Callback) resource;
+        self.pending.steal_frame_callback(callback_resource);
+        self.committed.steal_frame_callback(callback_resource);
     }
 }
 

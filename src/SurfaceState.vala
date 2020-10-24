@@ -9,7 +9,7 @@ public class SurfaceState {
     public int dy;
     public int scale;
     public unowned Wl.Buffer? buffer;
-    public SList<Wl.Callback?> frames;
+    public SList<unowned Wl.Callback?> frames;
     private Listener buffer_destroyed_listener;
 
     public SurfaceState() {
@@ -22,6 +22,7 @@ public class SurfaceState {
 
     ~SurfaceState() {
         reset_buffer();
+        destroy_frame_callbacks();
     }
 
     public void set_buffer(Wl.Buffer? buffer) {
@@ -60,6 +61,7 @@ public class SurfaceState {
         }
 
         if ((this.update & Update.FRAME) != 0) {
+            target.destroy_frame_callbacks();
             target.frames = (owned) this.frames;
         }
 
@@ -69,6 +71,19 @@ public class SurfaceState {
 
     private void on_buffer_destroyed(Listener listener, void* data) {
         reset_buffer();
+    }
+
+    public void steal_frame_callback(Wl.Callback? node) {
+        frames.remove(node);
+    }
+
+    public void destroy_frame_callbacks() {
+        unowned SList<unowned Wl.Callback?>? node = frames;
+        while (node != null) {
+            node.data.destroy();
+            node = node.next;
+        }
+        frames = null;
     }
 }
 

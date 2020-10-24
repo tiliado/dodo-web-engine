@@ -102,7 +102,7 @@ public class Buffer : Resource {
 [Compact]
 public class Callback : Resource {
     [CCode(cname="wl_resource_create")]
-    public Callback(Client client, ref Interface ifce, int version, uint id);
+    public static unowned Callback create(Client client, ref Interface ifce, int version, uint id);
     public void send_done(uint data);
 }
 
