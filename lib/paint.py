@@ -37,8 +37,12 @@ class LinePainter(Painter):
 
         # Draw progressing line
         for i in range(self.scale):
-            buffer.seek(((pos + i) * width + margin) * 4)
-            buffer.write(self.color * (width - 2 * margin))
+            try:
+                buffer.seek(((pos + i) * width + margin) * 4)
+                size = width - 2 * margin
+                buffer.write(self.color * size)
+            except ValueError as e:
+                print(e)
 
         self.line_pos += self.line_speed
 
