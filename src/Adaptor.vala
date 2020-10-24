@@ -56,7 +56,7 @@ public class Adaptor : GLib.Object {
         if (resize_timeout_id != 0) {
             Source.remove(resize_timeout_id);
         }
-        resize_timeout_id = Timeout.add(100, () => {
+        resize_timeout_id = Timeout.add(10, () => {
             resize_timeout_id = 0;
             check_state();
             return false;
