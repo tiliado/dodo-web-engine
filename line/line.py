@@ -13,8 +13,8 @@ from lib.paint import LinePainter
 
 # weston --debug -S wayland-weston
 WAYLAND_DISPLAY = os.environ.get("DEMO_DISPLAY", os.environ.get("WAYLAND_DISPLAY", "wayland-weston"))
-WIDTH = 480
-HEIGHT = 256
+WIDTH = 200
+HEIGHT = 100
 MARGIN = 10
 
 SHM_FORMAT = {
@@ -75,10 +75,11 @@ class Context:
 
 
 class Window(ABC):
-    def __init__(self, ctx: Context, width: int, height: int, title: str = None):
+    def __init__(self, ctx: Context, width: int, height: int, scale: int, title: str = None):
         self.ctx = ctx
         self.width = width
         self.height = height
+        self.scale = scale
         self.title = id(self) if title is None else title
         self.surface = None
         self.shell_surface = None
@@ -97,7 +98,7 @@ class Window(ABC):
             self.redraw(time)
 
         self.paint(time)
-        self.surface.damage(0, 0, self.width, self.height)
+        self.surface.damage(0, 0, self.width * self.scale, self.height * self.scale)
         self._frame = frame = self.surface.frame()
         frame.dispatcher["done"] = frame_callback
         self.surface.attach(self.buffer, 0, 0)
@@ -114,23 +115,25 @@ class Window(ABC):
         self.redraw()
 
     def create_buffer(self):
-        stride = self.width * 4
-        size = stride * self.height
+        width = self.width * self.scale
+        height = self.height * self.scale
+        stride = width * 4
+        size = stride * height
 
         with AnonymousFile(size) as fd:
             self.shm_data = mmap.mmap(
                 fd, size, prot=mmap.PROT_READ | mmap.PROT_WRITE, flags=mmap.MAP_SHARED
             )
             pool = self.ctx.shm.create_pool(fd, size)
-            buff = pool.create_buffer(0, self.width, self.height, stride, WlShm.format.argb8888.value)
+            buff = pool.create_buffer(0, width, height, stride, WlShm.format.argb8888.value)
             pool.destroy()
         return buff
 
 
 class LineWindow(Window):
-    def __init__(self, ctx: Context, width: int, height: int, title: str = None, margin: int = MARGIN):
-        super().__init__(ctx, width, height, title)
-        self.painter = LinePainter(width, height, margin)
+    def __init__(self, ctx: Context, width: int, height: int, title: str = None, margin: int = MARGIN, scale: int = 3):
+        super().__init__(ctx, width, height, scale, title)
+        self.painter = LinePainter(width, height, scale, margin)
 
     def paint(self, time: int):
         self.painter.paint(self.shm_data, time)
@@ -143,7 +146,7 @@ def main():
 
     windows = [
         LineWindow(ctx, WIDTH, HEIGHT, "Widow 1"),
-        LineWindow(ctx, WIDTH // 2, HEIGHT // 2, "Widow 2", 2 * MARGIN),
+        LineWindow(ctx, WIDTH // 2, HEIGHT // 2, "Widow 2"),
     ]
 
     for window in windows:
