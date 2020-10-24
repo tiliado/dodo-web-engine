@@ -9,7 +9,7 @@ public class Buffer : GLib.Object {
     private GLuint texture;
     public int width;
     public int height;
-    private Listener destroyed_listener = new Listener();
+    private Listener wl_buffer_destroyed = new Listener();
     private unowned Display display;
 
     public Buffer(Display display, Wl.Buffer wl_buffer, Gdk.GLContext gl_context, GLuint texture, bool released, int width, int height) {
@@ -20,8 +20,9 @@ public class Buffer : GLib.Object {
         this.wl_buffer_released = released;
         this.width = width;
         this.height = height;
-        destroyed_listener.connect(on_destroyed);
-        wl_buffer.add_destroy_listener(ref destroyed_listener.listener);
+        wl_buffer_destroyed.connect(on_wl_buffer_destroyed);
+        wl_buffer.add_destroy_listener(ref wl_buffer_destroyed.listener);
+        ref(); // Don't destroy until wl_buffer is released
     }
 
     ~Buffer() {
@@ -41,6 +42,11 @@ public class Buffer : GLib.Object {
         wl_buffer.send_release();
         display.dispatch();
         wl_buffer = null;
+    }
+
+    public void drop() {
+        destroy_texture();
+        release();
     }
 
     /** Get texture without claiming the ownership. */
@@ -120,10 +126,11 @@ public class Buffer : GLib.Object {
         return false;
     }
 
-    private void on_destroyed(Listener listener, void* data) {
+    private void on_wl_buffer_destroyed(Listener listener, void* data) {
         listener.disconnect();
         destroyed();
         wl_buffer = null;
+        unref();
     }
 }
 

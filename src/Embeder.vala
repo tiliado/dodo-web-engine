@@ -8,7 +8,7 @@ public class Embeder : GLib.Object {
     };
     public Wl.Global glob;
     private unowned Display display;
-    private HashTable<unowned Wl.Client, Nuv.Embeder> bound;
+    private HashTable<unowned Wl.Client, unowned Nuv.Embeder> bound;
     private HashTable<View, Adaptor> widgets;
     private unowned Wl.Client? client;
     private Compositor compositor;
@@ -17,7 +17,7 @@ public class Embeder : GLib.Object {
     public Embeder(Display display, Compositor compositor) {
         this.display = display;
         this.compositor = compositor;
-        bound = new HashTable<unowned Wl.Client, Nuv.Embeder>(direct_hash, direct_equal);
+        bound = new HashTable<unowned Wl.Client, unowned Nuv.Embeder>(direct_hash, direct_equal);
         widgets = new HashTable<View, Adaptor>(direct_hash, direct_equal);
         glob = new Wl.Global(display.wl_display, ref Nuv.embeder_interface, VERSION, this, Embeder.bind);
         display.client_destroyed.connect(on_client_destroyed);
@@ -59,9 +59,9 @@ public class Embeder : GLib.Object {
             return;
         }
 
-        var resource = new Nuv.Embeder(client, ref Nuv.embeder_interface, (int) version, id);
-        resource.set_implementation(&Embeder.impl, self, null);
-        self.bound[client] = (owned) resource;
+        unowned Nuv.Embeder wl_embeder = Nuv.Embeder.create(client, ref Nuv.embeder_interface, (int) version, id);
+        wl_embeder.set_implementation(&Embeder.impl, self, null);
+        self.bound[client] = wl_embeder;
 
         if (self.client == null) {
             self.client = client;
@@ -87,8 +87,8 @@ public class Embeder : GLib.Object {
         List<unowned Adaptor> candidates =  self.widgets.get_values();
         foreach (unowned Adaptor adaptor in candidates) {
             if (adaptor.serial == serial) {
-                var view = new Nuv.View(client, ref Nuv.view_interface, VERSION, view_id);
-                adaptor.attach_view(client, (owned) view, self.compositor.get_surface(surface.get_id()));
+                unowned Nuv.View view = Nuv.View.create(client, ref Nuv.view_interface, VERSION, view_id);
+                adaptor.attach_view(client, view, self.compositor.get_surface(surface.get_id()));
                 adaptor.width = width;
                 adaptor.height = height;
                 adaptor.scale = scale;
@@ -129,7 +129,7 @@ public class Embeder : GLib.Object {
 
     private void send_ping() {
         uint serial = display.wl_display.next_serial();
-        var iter = HashTableIter<unowned Wl.Client, Nuv.Embeder>(bound);
+        var iter = HashTableIter<unowned Wl.Client, unowned Nuv.Embeder>(bound);
         unowned Wl.Client client;
         unowned Nuv.Embeder embeder;
         while (iter.next (out client, out embeder)) {

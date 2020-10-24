@@ -18,7 +18,6 @@ public class Surface : GLib.Object {
         Surface.damage_buffer
     };
     public uint id;
-    private unowned Wl.Surface? resource;
     private SurfaceState pending = new SurfaceState();
     private SurfaceState committed = new SurfaceState();
     /** The x position of a buffer top left corner in surface coordinates. */
@@ -36,85 +35,87 @@ public class Surface : GLib.Object {
         this.client = client;
         debug("%s: New surface version=%d, id=%u.", Utils.client_info(client), version, id);
         assert(1 <= version <= SURFACE_VERSION);
-        resource = Wl.Surface.borrow(client, ref Wl.surface_interface, version, id); // Owned by Wayland
-        resource.set_implementation(&Surface.impl, this, Surface.resource_destroyed);
+        unowned Wl.Surface wl_surface = Wl.Surface.create(client, ref Wl.surface_interface, version, id);
+        wl_surface.set_implementation(&Surface.impl, this, Surface.on_wl_surface_destroyed);
+        ref(); // Do not destroy until wl_surface is destroyed
     }
 
     public signal void state_committed();
     public signal void destroyed();
 
-    private static void resource_destroyed(Wl.Resource? resource) {
+    private static void on_wl_surface_destroyed(Wl.Resource? resource) {
         unowned Surface self = (Surface) resource.get_user_data();
         self.pending.reset_buffer();
         self.committed.reset_buffer();
+        self.buffer.drop();
         self.buffer = null;
         self.destroyed();
+        self.unref();
     }
 
-    private static void destroy(Wl.Client client, Wl.Resource resource) {
-        resource.destroy();
+    private static void destroy(Wl.Client client, Wl.Surface wl_surface) {
+        wl_surface.destroy();
     }
 
-    private static void attach(Wl.Client client, Wl.Resource resource, Wl.Buffer buffer, int x, int y) {
-        unowned Surface s = Surface.from_resource(resource);
-        s.pending.update |= Update.BUFFER;
-        s.pending.dx = x;
-        s.pending.dy = y;
-        s.pending.set_buffer(buffer);
+    private static void attach(Wl.Client client, Wl.Surface wl_surface, Wl.Buffer buffer, int x, int y) {
+        unowned Surface self = Surface.from_resource(wl_surface);
+        self.pending.update |= Update.BUFFER;
+        self.pending.dx = x;
+        self.pending.dy = y;
+        self.pending.set_buffer(buffer);
     }
 
-    private static void damage(Wl.Client client, Wl.Resource resource, int x, int y, int width, int height) {
-        unowned Surface s = Surface.from_resource(resource);
+    private static void damage(Wl.Client client, Wl.Surface wl_surface, int x, int y, int width, int height) {
+        unowned Surface self = Surface.from_resource(wl_surface);
         if (width < 0 || height < 0) {
             return;
         }
 
         // TODO: Proper manipulation with pixman
-        Rect* damage = &s.pending.damage;
+        Rect* damage = &self.pending.damage;
         damage.expand(x, y, width, height);
-        s.pending.update |= Update.DAMAGE;
+        self.pending.update |= Update.DAMAGE;
     }
 
-    private static void frame(Wl.Client client, Wl.Resource resource, uint callback_id) {
-        unowned Surface s = Surface.from_resource(resource);
+    private static void frame(Wl.Client client, Wl.Surface wl_surface, uint callback_id) {
+        unowned Surface self = Surface.from_resource(wl_surface);
         var callback_resource = new Wl.Callback(client, ref Wl.callback_interface, CALLBACK_VERSION, callback_id);
         callback_resource.set_implementation(null, null, null);
-        // FIXME: callback_resource.set_implementation(null, null, callback_handle_resource_destroy);
-        s.pending.frames.prepend((owned) callback_resource);
-        s.pending.update |= Update.FRAME;
+        self.pending.frames.prepend((owned) callback_resource);
+        self.pending.update |= Update.FRAME;
     }
 
-    private static void set_opaque_region(Wl.Client client, Wl.Resource resource, Wl.Resource region){
+    private static void set_opaque_region(Wl.Client client, Wl.Surface wl_surface, Wl.Resource region){
     }
 
-    private static void set_input_region(Wl.Client client, Wl.Resource resource, Wl.Resource region){
+    private static void set_input_region(Wl.Client client, Wl.Surface wl_surface, Wl.Resource region){
     }
 
-    private static void commit(Wl.Client client, Wl.Resource resource) {
-        unowned Surface s = Surface.from_resource(resource);
-        s.pending.commit(s.committed);
-        s.x += s.committed.dx;
-        s.y += s.committed.dy;
-        s.update_buffer();
-        s.state_committed();
+    private static void commit(Wl.Client client, Wl.Surface wl_surface) {
+        unowned Surface self = Surface.from_resource(wl_surface);
+        self.pending.commit(self.committed);
+        self.x += self.committed.dx;
+        self.y += self.committed.dy;
+        self.update_buffer();
+        self.state_committed();
     }
 
-    private static void set_buffer_transform(Wl.Client client, Wl.Resource resource, int transform) {
+    private static void set_buffer_transform(Wl.Client client, Wl.Surface wl_surface, int transform) {
 
     }
 
-    private static void set_buffer_scale(Wl.Client client, Wl.Resource resource, int scale) {
+    private static void set_buffer_scale(Wl.Client client, Wl.Surface wl_surface, int scale) {
         if (scale <= 0) {
-            resource.post_error(Wl.SurfaceError.INVALID_SCALE, "Specified scale value (%d) is not positive", scale);
+            wl_surface.post_error(Wl.SurfaceError.INVALID_SCALE, "Specified scale value (%d) is not positive", scale);
             return;
         }
-        unowned Surface s = Surface.from_resource(resource);
-        s.pending.update |= Update.SCALE;
-        s.pending.scale = scale;
+        unowned Surface self = Surface.from_resource(wl_surface);
+        self.pending.update |= Update.SCALE;
+        self.pending.scale = scale;
     }
 
-    private static void damage_buffer(Wl.Client client, Wl.Resource resource, int x, int y, int width, int height) {
-        Surface.damage(client, resource, x, y, width, height);
+    private static void damage_buffer(Wl.Client client, Wl.Surface wl_surface, int x, int y, int width, int height) {
+        Surface.damage(client, wl_surface, x, y, width, height);
     }
 
     private static unowned Surface from_resource(Wl.Resource resource) {

@@ -9,11 +9,11 @@ public class Compositor : GLib.Object{
     private HashTable<void*, Surface> surfaces;
     public Wl.Global glob;
     private unowned Display display;
-    private HashTable<unowned Wl.Client, Wl.Resource> bound;
+    private HashTable<unowned Wl.Client, unowned Wl.Compositor> bound;
 
     public Compositor(Display display) {
         this.display = display;
-        bound = new HashTable<unowned Wl.Client, Wl.Resource>(direct_hash, direct_equal);
+        bound = new HashTable<unowned Wl.Client, unowned Wl.Compositor>(direct_hash, direct_equal);
         surfaces = new HashTable<void*, Surface>(direct_hash, direct_equal);
         glob = new Wl.Global(display.wl_display, ref Wl.compositor_interface, COMPOSITOR_VERSION, this, Compositor.bind);
         display.client_destroyed.connect(on_client_destroyed);
@@ -38,9 +38,9 @@ public class Compositor : GLib.Object{
             client.post_implementation_error("Cannot bind compositor more than once.");
             return;
         }
-        var resource = new Wl.Resource(client, ref Wl.compositor_interface, (int) version, id);
-        resource.set_implementation(&Compositor.impl, self, null);
-        self.bound[client] = (owned) resource;
+        unowned Wl.Compositor wl_compositor = Wl.Compositor.create(client, ref Wl.compositor_interface, (int) version, id);
+        wl_compositor.set_implementation(&Compositor.impl, self, null);
+        self.bound[client] = wl_compositor;
     }
 
     private static void create_surface(Wl.Client client, Wl.Resource resource, uint id) {

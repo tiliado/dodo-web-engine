@@ -17,7 +17,7 @@ public struct EmbederInterface {
 [Compact]
 public class Embeder: Wl.Resource {
     [CCode(cname="wl_resource_create")]
-    public Embeder(Wl.Client client, ref Wl.Interface ifce, int version, uint id);
+    public static unowned Embeder create(Wl.Client client, ref Wl.Interface ifce, int version, uint id);
     public void send_ping(uint serial);
     public void send_view_request(uint serial, uint width, uint height, uint scale);
 }
@@ -26,7 +26,7 @@ public class Embeder: Wl.Resource {
 [Compact]
 public class View: Wl.Resource {
     [CCode(cname="wl_resource_create")]
-    public View(Wl.Client client, ref Wl.Interface ifce, int version, uint id);
+    public static unowned View create(Wl.Client client, ref Wl.Interface ifce, int version, uint id);
     public void send_resize(uint width, uint height);
     public void send_rescale(uint scale);
 }

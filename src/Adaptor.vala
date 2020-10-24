@@ -4,7 +4,7 @@ public class Adaptor : GLib.Object {
     private unowned Display display;
     public View widget;
     public unowned Wl.Client? client;
-    public Nuv.View? view;
+    public unowned Nuv.View? view;
     public Surface? surface;
     public uint serial;
     public uint width;
@@ -44,10 +44,10 @@ public class Adaptor : GLib.Object {
         display.dispatch();
     }
 
-    public void attach_view(Wl.Client? client, owned Nuv.View view, Surface surface) {
+    public void attach_view(Wl.Client? client, Nuv.View view, Surface surface) {
         this.serial = 0;
         this.client = client;
-        this.view = (owned) view;
+        this.view = view;
         this.surface = surface;
         widget.set_surface(surface);
     }

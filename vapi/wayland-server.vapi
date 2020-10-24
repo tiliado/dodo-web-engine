@@ -8,34 +8,34 @@ public delegate void NotifyFunc(Listener? listener, void* data);
 [CCode(cname="wl_resource_destroy_func_t", has_target=false)]
 public delegate void ResourceDestroyFunc(Resource? resource);
 [CCode(has_target=false)]
-public delegate void AttachBufferFunc(Wl.Client client, Wl.Resource resource, Wl.Buffer buffer, int x, int y);
+public delegate void AttachBufferFunc(Client client, Surface wl_surface, Buffer buffer, int x, int y);
 [CCode(has_target=false)]
-public delegate void ClientResourceDestroyFunc(Wl.Client client, Wl.Resource resource);
+public delegate void SurfaceDestroyFunc(Client client, Surface wl_surface);
 [CCode(has_target=false)]
-public delegate void CommitFunc(Wl.Client client, Wl.Resource resource);
+public delegate void CommitFunc(Client client, Surface wl_surface);
 [CCode(has_target=false)]
-public delegate void CreateSurfaceFunc(Wl.Client client, Wl.Resource resource, uint id);
+public delegate void CreateSurfaceFunc(Client client, Surface wl_surface, uint id);
 [CCode(has_target=false)]
-public delegate void CreateRegionFunc(Wl.Client client, Wl.Resource resource, uint id);
+public delegate void CreateRegionFunc(Client client, Surface wl_surface, uint id);
 [CCode(has_target=false)]
-public delegate void DamageBufferFunc(Wl.Client client, Wl.Resource resource, int x, int y, int width, int height);
+public delegate void DamageBufferFunc(Client client, Surface wl_surface, int x, int y, int width, int height);
 [CCode(has_target=false)]
-public delegate void DamageSurfaceFunc(Wl.Client client, Wl.Resource resource, int x, int y, int width, int height);
+public delegate void DamageSurfaceFunc(Client client, Surface wl_surface, int x, int y, int width, int height);
 [CCode(has_target=false)]
-public delegate void RequestFrameFunc(Wl.Client client, Wl.Resource resource, uint callback_id);
+public delegate void RequestFrameFunc(Client client, Surface wl_surface, uint callback_id);
 [CCode(has_target=false)]
-public delegate void SetBufferScaleFunc(Wl.Client client, Wl.Resource resource, int scale);
+public delegate void SetBufferScaleFunc(Client client, Surface wl_surface, int scale);
 [CCode(has_target=false)]
-public delegate void SetBufferTransformFunc(Wl.Client client, Wl.Resource resource, int transform);
+public delegate void SetBufferTransformFunc(Client client, Surface wl_surface, int transform);
 [CCode(has_target=false)]
-public delegate void SetInputRegionFunc(Wl.Client client, Wl.Resource resource, Wl.Resource region);
+public delegate void SetInputRegionFunc(Client client, Surface wl_surface, Resource region);
 [CCode(has_target=false)]
-public delegate void SetOpaqueRegionFunc(Wl.Client client, Wl.Resource resource, Wl.Resource region);
+public delegate void SetOpaqueRegionFunc(Client client, Surface wl_surface, Resource region);
 
 [CCode(cname="struct wl_client", free_function="wl_client_destroy")]
 [Compact]
 public class Client {
-    public void add_destroy_listener(ref Wl.Listener listener);
+    public void add_destroy_listener(ref Listener listener);
     public void get_credentials(out uint pid, out uint uid, out uint gid);
     public void post_implementation_error(string fmt, ...);
     public void post_no_memory();
@@ -46,7 +46,7 @@ public class Client {
 public class Display {
     [CCode(cname="wl_display_create")]
     public Display();
-    public void add_client_created_listener(ref Wl.Listener listener);
+    public void add_client_created_listener(ref Listener listener);
     public void add_destroy_listener(ref Listener listener);
     public int add_socket(string name);
     public void destroy_clients();
@@ -78,10 +78,6 @@ public class Global {
 [CCode(cname="struct wl_resource", free_function="wl_resource_destroy")]
 [Compact]
 public class Resource {
-    [CCode(cname="wl_resource_create")]
-    public Resource(Client client, ref Interface ifce, int version, uint id);
-    [CCode(cname="wl_resource_create")]
-    public static unowned Resource borrow(Client client, ref Interface ifce, int version, uint id);
     public void add_destroy_listener(ref Listener listener);
     public void destroy();
     public unowned Client? get_client();
@@ -98,7 +94,7 @@ public class Resource {
 [Compact]
 public class Buffer : Resource {
     [CCode(cname="wl_resource_create")]
-    public Buffer(Client client, ref Interface ifce, int version, uint id);
+    public static unowned Buffer create(Client client, ref Interface ifce, int version, uint id);
     public void send_release();
 }
 
@@ -110,11 +106,18 @@ public class Callback : Resource {
     public void send_done(uint data);
 }
 
+[CCode(cname="struct wl_resource", free_function="wl_resource_destroy")]
+[Compact]
+public class Compositor : Resource {
+    [CCode(cname="wl_resource_create")]
+    public static unowned Compositor create(Client client, ref Interface ifce, int version, uint id);
+}
+
 [CCode(cname="struct wl_shm_buffer", free_function="")]
 [Compact]
 public class ShmBuffer {
     [CCode(cname="wl_shm_buffer_get")]
-    public static unowned ShmBuffer? from_resource(Wl.Resource resource);
+    public static unowned ShmBuffer? from_resource(Resource resource);
     public void begin_access();
     public void end_access();
     public void* get_data();
@@ -128,9 +131,7 @@ public class ShmBuffer {
 [Compact]
 public class Surface : Resource {
     [CCode(cname="wl_resource_create")]
-    public Surface(Client client, ref Interface ifce, int version, uint id);
-    [CCode(cname="wl_resource_create")]
-    public static unowned Surface borrow(Client client, ref Interface ifce, int version, uint id);
+    public static unowned Surface create(Client client, ref Interface ifce, int version, uint id);
 }
 
 [CCode (cname = "struct wl_compositor_interface", has_type_id = false)]
@@ -151,7 +152,7 @@ public struct Interface {
 
 [CCode (cname = "struct wl_surface_interface", has_type_id = false)]
 public struct SurfaceInterface {
-    public ClientResourceDestroyFunc destroy;
+    public SurfaceDestroyFunc destroy;
     public AttachBufferFunc attach;
     public DamageSurfaceFunc damage;
     public RequestFrameFunc frame;
