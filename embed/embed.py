@@ -7,6 +7,7 @@ from typing import Union
 from pywayland.client import Display
 from pywayland.utils import AnonymousFile
 
+from lib.paint import LinePainter
 from wl_protocols.wayland import WlCompositor, WlShm
 
 from wl_protocols.nuvola_embed import NuvEmbeder
@@ -92,12 +93,27 @@ class View:
         self.scale = scale
         self.shm_data = None
         self.buffer = None
+        self.frame = None
+        self.last_time = 0
+
+        self.painter = LinePainter(width, height, scale, 5)
 
         view.dispatcher["resize"] = self.on_resize
         view.dispatcher["rescale"] = self.on_rescale
 
         self.create_buffer()
+        self.redraw()
+
+    def redraw(self, time: int = None):
+        if time is None:
+            time = self.last_time
+        else:
+            self.last_time = time
+        self.render(time)
         self.commit()
+
+    def render(self, time):
+        self.painter.paint(self.shm_data, time)
 
     def create_buffer(self):
         if self.buffer is not None:
@@ -119,6 +135,12 @@ class View:
         self.buffer = buffer
 
     def commit(self):
+        def frame_callback(callback, time):
+            callback._destroy()
+            self.redraw(time)
+
+        self.frame = frame = self.surface.frame()
+        frame.dispatcher["done"] = frame_callback
         self.surface.damage(0, 0, self.scale * self.width, self.scale * self.height)
         self.surface.attach(self.buffer, 0, 0)
         self.surface.commit()
@@ -126,17 +148,17 @@ class View:
     def on_resize(self, view, width, height):
         print("resize", width, height)
         if self.width != width or self.height != height:
-            self.width = width
-            self.height = height
+            self.painter.width = self.width = width
+            self.painter.height = self.height = height
             self.create_buffer()
-            self.commit()
+            self.redraw()
 
     def on_rescale(self, view, scale):
         print("rescale", scale)
         if self.scale != scale:
-            self.scale = scale
+            self.painter.scale = self.scale = scale
             self.create_buffer()
-            self.commit()
+            self.redraw()
 
 
 def main():
