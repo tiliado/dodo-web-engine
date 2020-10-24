@@ -4,7 +4,7 @@ public class Embeder : GLib.Object {
     private const int VERSION = 1;
     private static Nuv.EmbederInterface impl = {
         Embeder.pong,
-        Embeder.new_view
+        Embeder.create_view
     };
     public Wl.Global glob;
     private unowned Display display;
@@ -48,7 +48,7 @@ public class Embeder : GLib.Object {
         uint scale = (uint) widget.scale_factor;
         debug("Window %u×%u factor %u.", width, height, scale);
         adaptor.serial = display.wl_display.next_serial();
-        bound[client].send_view_request(adaptor.serial, width, height, scale);
+        bound[client].send_view_requested(adaptor.serial, width, height, scale);
     }
 
     private static void bind(Wl.Client client, void *data, uint version, uint id) {
@@ -74,16 +74,16 @@ public class Embeder : GLib.Object {
         }
     }
 
-    private static void pong(Wl.Client client, Wl.Resource resource, uint serial) {
+    private static void pong(Wl.Client client, Nuv.Embeder wl_embeder, uint serial) {
         debug("%s: Pong serial=%u", Utils.client_info(client), serial);
     }
 
-    private static void new_view(
-        Wl.Client client, Wl.Resource resource, uint serial, uint view_id,
+    private static void create_view(
+        Wl.Client client, Nuv.Embeder wl_embeder, uint serial, uint view_id,
         Wl.Surface surface, uint width, uint height, uint scale
     ) {
         debug("%s: New view serial=%u id=%u", Utils.client_info(client), serial, view_id);
-        unowned Embeder self = (Embeder) resource.get_user_data();
+        unowned Embeder self = (Embeder) wl_embeder.get_user_data();
         List<unowned Adaptor> candidates =  self.widgets.get_values();
         foreach (unowned Adaptor adaptor in candidates) {
             if (adaptor.serial == serial) {

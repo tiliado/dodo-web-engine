@@ -35,11 +35,11 @@ public class Adaptor : GLib.Object {
         if (this.width != width || this.height != height) {
             this.width = width;
             this.height = height;
-            view.send_resize(width, height);
+            view.send_resized(width, height);
         }
         if (this.scale != scale) {
             this.scale = scale;
-            view.send_rescale(scale);
+            view.send_rescaled(scale);
         }
         display.dispatch();
     }

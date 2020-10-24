@@ -13,7 +13,7 @@
       <arg name="serial" type="uint" summary="serial of the ping event"/>
     </request>
 
-    <request name="new_view">
+    <request name="create_view">
       <description summary="respond to a ping event">...</description>
       <arg name="serial" type="uint" summary="serial of the ping event"/>
       <arg name="view" type="new_id" interface="nuv_view" summary="create new nuvola view"/>
@@ -28,7 +28,7 @@
       <arg name="serial" type="uint" summary="pass this to the pong request"/>
     </event>
 
-    <event name="view_request">
+    <event name="view_requested">
       <description summary="create new view">...</description>
       <arg name="serial" type="uint" summary="serial of the request"/>
       <arg name="width" type="uint" summary="new width in virtual pixels - consult scale factor"/>
@@ -41,13 +41,13 @@
   <interface name="nuv_view" version="1">
     <description summary="create nuvola view">...</description>
 
-    <event name="resize">
+    <event name="resized">
       <description summary="set new size">...</description>
       <arg name="width" type="uint" summary="new width in virtual pixels - consult scale factor"/>
       <arg name="height" type="uint" summary="new height in virtual pixels - consult scale factor"/>
     </event>
 
-    <event name="rescale">
+    <event name="rescaled">
       <description summary="set new scale factor">...</description>
       <arg name="scale" type="uint" summary="scale factor"/>
     </event>
