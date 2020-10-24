@@ -65,7 +65,7 @@ class Context:
             print("got embeder")
             self.embeder = registry.bind(object_id, NuvEmbeder, version)
             self.embeder.dispatcher["ping"] = self.on_ping
-            self.embeder.dispatcher["view_request"] = self.on_new_view
+            self.embeder.dispatcher["view_requested"] = self.on_view_requested
 
     def on_global_object_removed(self, registry, object_id):
         print("Global object removed:", registry, object_id)
@@ -76,10 +76,10 @@ class Context:
     def on_ping(self, embeder, serial):
         embeder.pong(serial)
 
-    def on_new_view(self, embeder, serial, width, height, scale):
+    def on_view_requested(self, embeder, serial, width, height, scale):
         print("Request new view", serial, width, height, scale)
         surface = self.compositor.create_surface()
-        view = embeder.new_view(serial, surface, width, height, scale)
+        view = embeder.create_view(serial, surface, width, height, scale)
         self.views[view] = View(self.shm, view, surface, width, height, scale)
 
 
@@ -98,8 +98,8 @@ class View:
 
         self.painter = LinePainter(width, height, scale, 5)
 
-        view.dispatcher["resize"] = self.on_resize
-        view.dispatcher["rescale"] = self.on_rescale
+        view.dispatcher["resized"] = self.on_resized
+        view.dispatcher["rescaled"] = self.on_rescaled
 
         self.create_buffer()
         self.redraw()
@@ -145,7 +145,7 @@ class View:
         self.surface.attach(self.buffer, 0, 0)
         self.surface.commit()
 
-    def on_resize(self, view, width, height):
+    def on_resized(self, view, width, height):
         print("resize", width, height)
         if self.width != width or self.height != height:
             self.painter.width = self.width = width
@@ -153,7 +153,7 @@ class View:
             self.create_buffer()
             self.redraw()
 
-    def on_rescale(self, view, scale):
+    def on_rescaled(self, view, scale):
         print("rescale", scale)
         if self.scale != scale:
             self.painter.scale = self.scale = scale
