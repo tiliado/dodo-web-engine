@@ -2,7 +2,7 @@ VENVS := $(HOME)/.virtualenvs
 VENV := $(VENVS)/wayland-demo
 ARGS :=
 NAME := embed.py
-PROTOCOL_FILES := ../nuvola_embed/__init__.py nuvola_embed/nuv_embeder.py
+PROTOCOL_FILES := ../wl_protocols/nuvola_embed/nuv_embeder.py ../wl_protocols/nuvola_embed/nuv_view.py
 
 info:
 	cat Makefile
@@ -14,10 +14,14 @@ venv:
 	$(VENV)/bin/python3 -m pip install -U -r requirements.txt
 
 $(PROTOCOL_FILES): ~/dev/repo/nuvola/nuvolaruntime/wayland/protocol/nuvola-embed.xml
-	python3 -m pywayland.scanner -i $< -o ..
+	python3 -m pywayland.scanner -o ../wl_protocols -i /usr/share/wayland/wayland.xml $<
+	touch ../wl_protocols/__init__.py
 
 run-venv: $(PROTOCOL_FILES)
 	PYTHONPATH=.. $(VENV)/bin/python3 $(NAME) $(ARGS)
 
 run: $(PROTOCOL_FILES)
 	PYTHONPATH=.. python3 $(NAME) $(ARGS)
+
+clean:
+	rm -rf ../wl_protocols

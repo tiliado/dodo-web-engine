@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
+import mmap
 import os
 import signal
 from typing import Union
 
 from pywayland.client import Display
-from pywayland.protocol.wayland import WlCompositor, WlShm
+from pywayland.utils import AnonymousFile
 
-from nuvola_embed import NuvEmbeder
+from wl_protocols.wayland import WlCompositor, WlShm
+
+from wl_protocols.nuvola_embed import NuvEmbeder
 
 # weston --debug -S wayland-weston
 WAYLAND_DISPLAY = os.environ.get("DEMO_DISPLAY", os.environ.get("WAYLAND_DISPLAY", "wayland-weston"))
@@ -26,7 +29,7 @@ class Context:
         self.compositor = None
         self.shm = None
         self.embeder = None
-        self.views = []
+        self.views = {}
 
     def __del__(self):
         print("Disconnecting from", WAYLAND_DISPLAY)
@@ -74,16 +77,66 @@ class Context:
 
     def on_new_view(self, embeder, serial, width, height, scale):
         print("Request new view", serial, width, height, scale)
-        view = embeder.new_view(serial, width, height, scale)
+        surface = self.compositor.create_surface()
+        view = embeder.new_view(serial, surface, width, height, scale)
+        self.views[view] = View(self.shm, view, surface, width, height, scale)
+
+
+class View:
+    def __init__(self, shm, view, surface, width, height, scale):
+        self.shm = shm
+        self.view = view
+        self.surface = surface
+        self.width = width
+        self.height = height
+        self.scale = scale
+        self.shm_data = None
+        self.buffer = None
+
         view.dispatcher["resize"] = self.on_resize
         view.dispatcher["rescale"] = self.on_rescale
-        self.views.append(view)
+
+        self.create_buffer()
+        self.commit()
+
+    def create_buffer(self):
+        if self.buffer is not None:
+            self.buffer.destroy()
+            self.buffer = None
+
+        width = self.scale * self.width
+        height = self.scale * self.height
+        stride = width * 4
+        size = stride * height
+
+        with AnonymousFile(size) as fd:
+            self.shm_data = mmap.mmap(
+                fd, size, prot=mmap.PROT_READ | mmap.PROT_WRITE, flags=mmap.MAP_SHARED
+            )
+            pool = self.shm.create_pool(fd, size)
+            buffer = pool.create_buffer(0, width, height, stride, WlShm.format.argb8888.value)
+            pool.destroy()
+        self.buffer = buffer
+
+    def commit(self):
+        self.surface.damage(0, 0, self.scale * self.width, self.scale * self.height)
+        self.surface.attach(self.buffer, 0, 0)
+        self.surface.commit()
 
     def on_resize(self, view, width, height):
         print("resize", width, height)
+        if self.width != width or self.height != height:
+            self.width = width
+            self.height = height
+            self.create_buffer()
+            self.commit()
 
     def on_rescale(self, view, scale):
         print("rescale", scale)
+        if self.scale != scale:
+            self.scale = scale
+            self.create_buffer()
+            self.commit()
 
 
 def main():
