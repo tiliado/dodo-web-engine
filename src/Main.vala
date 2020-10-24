@@ -9,6 +9,7 @@ void main(string[] args) {
 
     var display = new Display((owned) wl_display);
     display.attach(MainContext.ref_thread_default());
+    display.init_compositor();
     display.init_embeder();
 
     var window = new Gtk.Window();

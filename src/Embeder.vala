@@ -11,10 +11,12 @@ public class Embeder : GLib.Object {
     private HashTable<unowned Wl.Client, Nuv.Embeder> bound;
     private HashTable<Gtk.Widget, Adaptor> widgets;
     private unowned Wl.Client? client;
+    private Compositor compositor;
 
 
-    public Embeder(Display display) {
+    public Embeder(Display display, Compositor compositor) {
         this.display = display;
+        this.compositor = compositor;
         bound = new HashTable<unowned Wl.Client, Nuv.Embeder>(direct_hash, direct_equal);
         widgets = new HashTable<Gtk.Widget, Adaptor>(direct_hash, direct_equal);
         glob = new Wl.Global(display.wl_display, ref Nuv.embeder_interface, VERSION, this, Embeder.bind);
@@ -76,15 +78,17 @@ public class Embeder : GLib.Object {
         debug("%s: Pong serial=%u", Utils.client_info(client), serial);
     }
 
-    private static void new_view(Wl.Client client, Wl.Resource resource, uint serial, uint id, uint width, uint height, uint scale) {
-        debug("%s: New view serial=%u id=%u", Utils.client_info(client), serial, id);
+    private static void new_view(
+        Wl.Client client, Wl.Resource resource, uint serial, uint view_id,
+        Wl.Surface surface, uint width, uint height, uint scale
+    ) {
+        debug("%s: New view serial=%u id=%u", Utils.client_info(client), serial, view_id);
         unowned Embeder self = (Embeder) resource.get_user_data();
         List<unowned Adaptor> candidates =  self.widgets.get_values();
         foreach (unowned Adaptor adaptor in candidates) {
             if (adaptor.serial == serial) {
-                adaptor.serial = 0;
-                adaptor.client = client;
-                adaptor.view = new Nuv.View(client, ref Nuv.view_interface, VERSION, id);
+                var view = new Nuv.View(client, ref Nuv.view_interface, VERSION, view_id);
+                adaptor.attach_view(client, (owned) view, self.compositor.get_surface(surface.get_id()));
                 adaptor.width = width;
                 adaptor.height = height;
                 adaptor.scale = scale;
@@ -113,6 +117,7 @@ public class Embeder : GLib.Object {
                     adaptor.serial = 0;
                     adaptor.client = null;
                     adaptor.view = null;
+                    adaptor.surface = null;
 
                     if (this.client != null) {
                         request_view(adaptor);

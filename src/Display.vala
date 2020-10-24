@@ -3,6 +3,7 @@ namespace Embed {
 public class Display: GLib.Object {
     public Wl.Display? wl_display;
     public Embeder? embeder;
+    public Compositor? compositor;
     private unowned Wl.EventLoop loop;
     private unowned MainContext? context;
     private uint context_source_id;
@@ -71,7 +72,15 @@ public class Display: GLib.Object {
     }
 
     public void init_embeder() {
-        embeder = new Embeder(this);
+        if (compositor == null) {
+            init_compositor();
+        }
+
+        embeder = new Embeder(this, compositor);
+    }
+
+    public void init_compositor() {
+        compositor = new Compositor(this);
     }
 
     private void on_display_destroyed(Listener listener, void* data) {

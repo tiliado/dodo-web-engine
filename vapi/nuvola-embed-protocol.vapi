@@ -5,7 +5,7 @@ namespace Nuv {
 public delegate void PongFunc(Wl.Client client, Wl.Resource resource, uint serial);
 
 [CCode(has_target=false)]
-public delegate void NewViewFunc(Wl.Client client, Wl.Resource resource, uint serial, uint id, uint width, uint height, uint scale);
+public delegate void NewViewFunc(Wl.Client client, Wl.Resource resource, uint serial, uint view_id, Wl.Surface surface, uint width, uint height, uint scale);
 
 [CCode (cname = "struct nuv_embeder_interface", has_type_id = false)]
 public struct EmbederInterface {

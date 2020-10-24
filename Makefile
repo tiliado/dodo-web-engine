@@ -12,8 +12,8 @@ build/nuvola-embed-protocol.c: protocol/nuvola-embed.xml build
 	wayland-scanner -s private-code $< $@
 
 build/wayland-embed: build/nuvola-embed-protocol.c build/nuvola-embed-protocol.h $(vala_src)
-	valac -v --save-temps -X -g -X -Ibuild -X '-DG_LOG_DOMAIN="Embed"' \
-	  --vapidir=./vapi --pkg=wayland-server --pkg=gtk+-3.0 --pkg=nuvola-embed-protocol \
+	valac -v --save-temps -X -g -X -Ibuild -X '-DG_LOG_DOMAIN="Embed"' -X -DGL_GLEXT_PROTOTYPES \
+	  --vapidir=./vapi --pkg=wayland-server --pkg=gtk+-3.0 --pkg=nuvola-embed-protocol --pkg=gl \
 	  -d build -o wayland-embed src/*.vala build/nuvola-embed-protocol.c
 
 run: all
