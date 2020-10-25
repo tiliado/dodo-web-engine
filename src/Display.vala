@@ -1,8 +1,8 @@
-namespace Embed {
+namespace Wevf {
 
 public class Display: GLib.Object {
     public Wl.Display? wl_display;
-    public Embeder? embeder;
+    public Embedder? embedder;
     public Compositor? compositor;
     private unowned Wl.EventLoop loop;
     private unowned MainContext? context;
@@ -71,12 +71,12 @@ public class Display: GLib.Object {
         }
     }
 
-    public void init_embeder() {
+    public void init_embedder() {
         if (compositor == null) {
             init_compositor();
         }
 
-        embeder = new Embeder(this, compositor);
+        embedder = new Embedder(this, compositor);
     }
 
     public void init_compositor() {
@@ -109,4 +109,4 @@ public class Display: GLib.Object {
     }
 }
 
-} // namespace Embed
+} // namespace Wevf

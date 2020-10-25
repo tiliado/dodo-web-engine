@@ -1,6 +1,6 @@
 using GL;
 
-namespace Embed {
+namespace Wevf {
 
 public class Buffer : GLib.Object {
     private unowned Wl.Buffer? wl_buffer;
@@ -135,4 +135,4 @@ public class Buffer : GLib.Object {
 }
 
 
-} // namespace Embed
+} // namespace Wevf

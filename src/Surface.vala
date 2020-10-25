@@ -1,6 +1,6 @@
 using GL;
 
-namespace Embed {
+namespace Wevf {
 
 public class Surface : GLib.Object {
     private const int CALLBACK_VERSION = 1;
@@ -174,4 +174,4 @@ public class Surface : GLib.Object {
     }
 }
 
-} // namespace Embed
+} // namespace Wevf

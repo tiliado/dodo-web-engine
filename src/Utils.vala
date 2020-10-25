@@ -1,4 +1,4 @@
-namespace Embed.Utils {
+namespace Wevf.Utils {
 
 public string client_info(Wl.Client client) {
     uint pid;
@@ -8,4 +8,4 @@ public string client_info(Wl.Client client) {
     return "Client (pid=%u, uid=%u, gid=%u)".printf(pid, uid, gid);
 }
 
-} // namespace Embed.Utils
+} // namespace Wevf.Utils

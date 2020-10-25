@@ -1,4 +1,4 @@
-namespace Embed {
+namespace Wevf {
 
 public delegate void ListenerHandler(Listener listener, void* data);
 
@@ -31,4 +31,4 @@ public class Listener {
     }
 }
 
-} // namespace Embed
+} // namespace Wevf

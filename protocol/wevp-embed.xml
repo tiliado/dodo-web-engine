@@ -1,35 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<protocol name="nuvola_embed">
+<protocol name="wevp_embed">
 
   <copyright>
     Copyright © 2020 Jiří Janoušek
+    License: BSD-2-Clause
   </copyright>
 
-  <interface name="nuv_embeder" version="1">
-    <description summary="create nuvola embed">...</description>
+  <interface name="wevp_embedder" version="1">
+    <description summary="embedder of Wayland Embedded View Framework"></description>
 
     <request name="pong">
-      <description summary="respond to a ping event">...</description>
+      <description summary="respond to a ping event"></description>
       <arg name="serial" type="uint" summary="serial of the ping event"/>
     </request>
 
     <request name="create_view">
-      <description summary="respond to a ping event">...</description>
-      <arg name="serial" type="uint" summary="serial of the ping event"/>
-      <arg name="view" type="new_id" interface="nuv_view" summary="create new nuvola view"/>
-      <arg name="surface" type="object" interface="wl_surface"/>
+      <description summary="create a new embedded view"></description>
+      <arg name="serial" type="uint" summary="serial of the view_requested event"/>
+      <arg name="view" type="new_id" interface="wevp_view" summary="create new embedded view"/>
+      <arg name="surface" type="object" interface="wl_surface" summary="surface of the view"/>
       <arg name="width" type="uint" summary="new width in virtual pixels - consult scale factor"/>
       <arg name="height" type="uint" summary="new height in virtual pixels - consult scale factor"/>
       <arg name="scale" type="uint" summary="scale factor"/>
     </request>
 
     <event name="ping">
-      <description summary="check if the client is alive">...</description>
+      <description summary="check if the client is alive"></description>
       <arg name="serial" type="uint" summary="pass this to the pong request"/>
     </event>
 
     <event name="view_requested">
-      <description summary="create new view">...</description>
+      <description summary="request creation of a new embedded view"></description>
       <arg name="serial" type="uint" summary="serial of the request"/>
       <arg name="width" type="uint" summary="new width in virtual pixels - consult scale factor"/>
       <arg name="height" type="uint" summary="new height in virtual pixels - consult scale factor"/>
@@ -38,17 +39,17 @@
 
   </interface>
 
-  <interface name="nuv_view" version="1">
-    <description summary="create nuvola view">...</description>
+  <interface name="wevp_view" version="1">
+    <description summary="an embedded view"></description>
 
     <event name="resized">
-      <description summary="set new size">...</description>
+      <description summary="set new size"></description>
       <arg name="width" type="uint" summary="new width in virtual pixels - consult scale factor"/>
       <arg name="height" type="uint" summary="new height in virtual pixels - consult scale factor"/>
     </event>
 
     <event name="rescaled">
-      <description summary="set new scale factor">...</description>
+      <description summary="set new scale factor"></description>
       <arg name="scale" type="uint" summary="scale factor"/>
     </event>
   </interface>

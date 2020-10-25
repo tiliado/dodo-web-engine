@@ -1,4 +1,4 @@
-namespace Embed {
+namespace Wevf {
 
 public class Compositor : GLib.Object{
     private const int COMPOSITOR_VERSION = 4;
@@ -67,4 +67,4 @@ public class Compositor : GLib.Object{
     }
 }
 
-} // namespace Embed
+} // namespace Wevf

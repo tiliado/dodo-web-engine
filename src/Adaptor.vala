@@ -1,10 +1,10 @@
-namespace Embed {
+namespace Wevf {
 
 public class Adaptor : GLib.Object {
     private unowned Display display;
     public View widget;
     public unowned Wl.Client? client;
-    public unowned Nuv.View? view;
+    public unowned Wevp.View? view;
     public Surface? surface;
     public uint serial;
     public uint width;
@@ -44,7 +44,7 @@ public class Adaptor : GLib.Object {
         display.dispatch();
     }
 
-    public void attach_view(Wl.Client? client, Nuv.View view, Surface surface) {
+    public void attach_view(Wl.Client? client, Wevp.View view, Surface surface) {
         this.serial = 0;
         this.client = client;
         this.view = view;
@@ -68,4 +68,4 @@ public class Adaptor : GLib.Object {
     }
 }
 
-} // namespace Embed
+} // namespace Wevf

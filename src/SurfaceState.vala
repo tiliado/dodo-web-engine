@@ -1,4 +1,4 @@
-namespace Embed {
+namespace Wevf {
 
 public class SurfaceState {
     public Rect damage;
@@ -139,4 +139,4 @@ public enum Update {
     FRAME;
 }
 
-} // namespace Embed
+} // namespace Wevf

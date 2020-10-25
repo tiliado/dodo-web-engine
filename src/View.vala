@@ -1,13 +1,12 @@
 using GL;
 
-namespace Embed {
+namespace Wevf {
 
-public errordomain OffscreenWebEngineError {
+public errordomain Error {
     FOO,
     VERTEX_SHADER,
     FRAGMENT_SHADER,
-    PROGRAM,
-    NOT_CONNECTED;
+    PROGRAM;
 }
 
 
@@ -50,7 +49,7 @@ public class View : Gtk.GLArea {
     private int width = 0;
     private int height = 0;
     private Surface? surface;
-    private Embeder embeder;
+    private Embedder embedder;
     private uint frames = 0;
     private bool crashed = false;
 
@@ -58,12 +57,12 @@ public class View : Gtk.GLArea {
         get; set; default = Gdk.RGBA() {red = 0.1, green = 0.1, blue = 0.1, alpha = 1.0};
     }
 
-    public View(Embeder embeder) {
-        this.embeder = embeder;
+    public View(Embedder embedder) {
+        this.embedder = embedder;
         realize.connect(on_realize);
         unrealize.connect(on_unrealize);
         set_auto_render(true);
-        embeder.add_view(this);
+        embedder.add_view(this);
     }
 
     ~View() {
@@ -142,7 +141,7 @@ public class View : Gtk.GLArea {
         free_gl();
     }
 
-    private void init_gl() throws OffscreenWebEngineError {
+    private void init_gl() throws Error {
         // Many thanks to https://learnopengl.com/Getting-started/Hello-Triangle
         GLubyte info_log[1024];
         GL.GLsizei length[1];
@@ -158,7 +157,7 @@ public class View : Gtk.GLArea {
         if (status[0] == 0) {
             glGetShaderInfoLog(gl_vertex_shader, 1024, length, info_log);
             glDeleteShader(gl_vertex_shader);
-            throw new OffscreenWebEngineError.VERTEX_SHADER(
+            throw new Error.VERTEX_SHADER(
                 "Failed to compile vertex shader: %s",
                 (string) info_log
             );
@@ -175,7 +174,7 @@ public class View : Gtk.GLArea {
             glGetShaderInfoLog(gl_fragment_shader, 1024, length, info_log);
             glDeleteShader(gl_vertex_shader);
             glDeleteShader(gl_fragment_shader);
-            throw new OffscreenWebEngineError.FRAGMENT_SHADER(
+            throw new Error.FRAGMENT_SHADER(
                 "Failed to compile fragment shader: %s",
                 (string) info_log
             );
@@ -192,7 +191,7 @@ public class View : Gtk.GLArea {
         glGetProgramiv(gl_program, GL_LINK_STATUS, status);
         if (status[0] == 0) {
             glGetProgramInfoLog(gl_program, 1024, length, info_log);
-            throw new OffscreenWebEngineError.PROGRAM(
+            throw new Error.PROGRAM(
                 "Failed to link program: %s",
                 (string) info_log
             );

@@ -1,30 +1,30 @@
-namespace Embed {
+namespace Wevf {
 
-public class Embeder : GLib.Object {
+public class Embedder : GLib.Object {
     private const int VERSION = 1;
-    private static Nuv.EmbederInterface impl = {
-        Embeder.pong,
-        Embeder.create_view
+    private static Wevp.EmbedderInterface impl = {
+        Embedder.pong,
+        Embedder.create_view
     };
     public Wl.Global glob;
     private unowned Display display;
-    private HashTable<unowned Wl.Client, unowned Nuv.Embeder> bound;
+    private HashTable<unowned Wl.Client, unowned Wevp.Embedder> bound;
     private HashTable<View, Adaptor> widgets;
     private unowned Wl.Client? client;
     private Compositor compositor;
 
 
-    public Embeder(Display display, Compositor compositor) {
+    public Embedder(Display display, Compositor compositor) {
         this.display = display;
         this.compositor = compositor;
-        bound = new HashTable<unowned Wl.Client, unowned Nuv.Embeder>(direct_hash, direct_equal);
+        bound = new HashTable<unowned Wl.Client, unowned Wevp.Embedder>(direct_hash, direct_equal);
         widgets = new HashTable<View, Adaptor>(direct_hash, direct_equal);
-        glob = new Wl.Global(display.wl_display, ref Nuv.embeder_interface, VERSION, this, Embeder.bind);
+        glob = new Wl.Global(display.wl_display, ref Wevp.embedder_interface, VERSION, this, Embedder.bind);
         display.client_destroyed.connect(on_client_destroyed);
         Timeout.add_seconds(10, () => {send_ping(); return true;});
     }
 
-    ~Embeder() {
+    ~Embedder() {
         display.client_destroyed.disconnect(on_client_destroyed);
         stderr.printf("~Embed\n");
         destroyed();
@@ -52,16 +52,16 @@ public class Embeder : GLib.Object {
     }
 
     private static void bind(Wl.Client client, void *data, uint version, uint id) {
-        debug("%s: Bind embeder version=%u id=%u", Utils.client_info(client), version, id);
-        unowned Embeder self = (Embeder) data;
+        debug("%s: Bind embedder version=%u id=%u", Utils.client_info(client), version, id);
+        unowned Embedder self = (Embedder) data;
         if (client in self.bound) {
             client.post_implementation_error("Cannot bind embed more than once.");
             return;
         }
 
-        unowned Nuv.Embeder wl_embeder = Nuv.Embeder.create(client, ref Nuv.embeder_interface, (int) version, id);
-        wl_embeder.set_implementation(&Embeder.impl, self, null);
-        self.bound[client] = wl_embeder;
+        unowned Wevp.Embedder wl_embedder = Wevp.Embedder.create(client, ref Wevp.embedder_interface, (int) version, id);
+        wl_embedder.set_implementation(&Embedder.impl, self, null);
+        self.bound[client] = wl_embedder;
 
         if (self.client == null) {
             self.client = client;
@@ -74,20 +74,20 @@ public class Embeder : GLib.Object {
         }
     }
 
-    private static void pong(Wl.Client client, Nuv.Embeder wl_embeder, uint serial) {
+    private static void pong(Wl.Client client, Wevp.Embedder wl_embedder, uint serial) {
         debug("%s: Pong serial=%u", Utils.client_info(client), serial);
     }
 
     private static void create_view(
-        Wl.Client client, Nuv.Embeder wl_embeder, uint serial, uint view_id,
+        Wl.Client client, Wevp.Embedder wl_embedder, uint serial, uint view_id,
         Wl.Surface surface, uint width, uint height, uint scale
     ) {
         debug("%s: New view serial=%u id=%u", Utils.client_info(client), serial, view_id);
-        unowned Embeder self = (Embeder) wl_embeder.get_user_data();
+        unowned Embedder self = (Embedder) wl_embedder.get_user_data();
         List<unowned Adaptor> candidates =  self.widgets.get_values();
         foreach (unowned Adaptor adaptor in candidates) {
             if (adaptor.serial == serial) {
-                unowned Nuv.View view = Nuv.View.create(client, ref Nuv.view_interface, VERSION, view_id);
+                unowned Wevp.View view = Wevp.View.create(client, ref Wevp.view_interface, VERSION, view_id);
                 adaptor.attach_view(client, view, self.compositor.get_surface(surface.get_id()));
                 adaptor.width = width;
                 adaptor.height = height;
@@ -129,15 +129,15 @@ public class Embeder : GLib.Object {
 
     private void send_ping() {
         uint serial = display.wl_display.next_serial();
-        var iter = HashTableIter<unowned Wl.Client, unowned Nuv.Embeder>(bound);
+        var iter = HashTableIter<unowned Wl.Client, unowned Wevp.Embedder>(bound);
         unowned Wl.Client client;
-        unowned Nuv.Embeder embeder;
-        while (iter.next (out client, out embeder)) {
+        unowned Wevp.Embedder embedder;
+        while (iter.next (out client, out embedder)) {
             debug("Ping for %s: %u.", Utils.client_info(client), serial);
-            embeder.send_ping(serial);
+            embedder.send_ping(serial);
         }
         display.dispatch();
     }
 }
 
-} // namespace Embed
+} // namespace Wevf
