@@ -10,10 +10,9 @@ from pywayland.utils import AnonymousFile
 from lib.paint import LinePainter
 from wl_protocols.wayland import WlCompositor, WlShm
 
-from wl_protocols.nuvola_embed import NuvEmbeder
+from wl_protocols.wevp_embed import WevpEmbedder
 
-# weston --debug -S wayland-weston
-WAYLAND_DISPLAY = os.environ.get("DEMO_DISPLAY", os.environ.get("WAYLAND_DISPLAY", "wayland-weston"))
+WAYLAND_DISPLAY = os.environ.get("DEMO_DISPLAY", os.environ.get("WAYLAND_DISPLAY", "wevf-demo"))
 
 MARGIN = 10
 
@@ -29,7 +28,7 @@ class Context:
         self.display = Display(display)
         self.compositor = None
         self.shm = None
-        self.embeder = None
+        self.embedder = None
         self.views = {}
 
     def __del__(self):
@@ -61,11 +60,11 @@ class Context:
             print("got shm")
             self.shm = registry.bind(object_id, WlShm, version)
             self.shm.dispatcher["format"] = self.on_shm_format
-        elif interface == "nuv_embeder":
+        elif interface == "wevp_embedder":
             print("got embeder")
-            self.embeder = registry.bind(object_id, NuvEmbeder, version)
-            self.embeder.dispatcher["ping"] = self.on_ping
-            self.embeder.dispatcher["view_requested"] = self.on_view_requested
+            self.embedder = registry.bind(object_id, WevpEmbedder, version)
+            self.embedder.dispatcher["ping"] = self.on_ping
+            self.embedder.dispatcher["view_requested"] = self.on_view_requested
 
     def on_global_object_removed(self, registry, object_id):
         print("Global object removed:", registry, object_id)
@@ -76,10 +75,10 @@ class Context:
     def on_ping(self, embeder, serial):
         embeder.pong(serial)
 
-    def on_view_requested(self, embeder, serial, width, height, scale):
+    def on_view_requested(self, embedder, serial, width, height, scale):
         print("Request new view", serial, width, height, scale)
         surface = self.compositor.create_surface()
-        view = embeder.create_view(serial, surface, width, height, scale)
+        view = embedder.create_view(serial, surface, width, height, scale)
         self.views[view] = View(self.shm, view, surface, width, height, scale)
 
 
