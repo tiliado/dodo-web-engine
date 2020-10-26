@@ -151,7 +151,9 @@ class View:
 
     def create_buffer(self):
         if self.buffer is not None:
-            self.buffer.destroy()
+            self.buffer.dropped = True
+            if self.buffer.released:
+                self.buffer.destroy()
             self.buffer = None
 
         width = self.scale * self.width
@@ -165,6 +167,9 @@ class View:
             )
             pool = self.shm.create_pool(fd, size)
             buffer = pool.create_buffer(0, width, height, stride, WlShm.format.argb8888.value)
+            buffer.dropped = False
+            buffer.released = True
+            buffer.dispatcher["release"] = self.on_buffer_released
             pool.destroy()
         self.buffer = buffer
 
@@ -172,6 +177,9 @@ class View:
         self.surface.damage(0, 0, self.scale * self.width, self.scale * self.height)
         self.surface.attach(self.buffer, 0, 0)
         self.surface.commit()
+        if self.buffer is not None:
+            self.buffer.released = False
+            self.buffer.dropped = False
         self.wl_display.flush()
 
     def on_resized(self, wl_view, width, height):
@@ -189,6 +197,11 @@ class View:
             self.scale = scale
             self.create_buffer()
             self.redraw()
+
+    def on_buffer_released(self, wl_buffer):
+        wl_buffer.released = True
+        if wl_buffer.dropped:
+            wl_buffer.destroy()
 
     @Slot()
     def on_texture_rendered(self, framebuffer: Framebuffer):
