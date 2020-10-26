@@ -99,7 +99,6 @@ public class View : Gtk.GLArea {
     }
 
     public override bool render(Gdk.GLContext ctx) {
-        stderr.printf("Wayland view render\n");
 
         if (surface != null && surface.buffer != null) {
             crashed = true;
@@ -338,7 +337,6 @@ public class View : Gtk.GLArea {
         glViewport((this.width - width) / 2, (this.height - height) / 2, width, height);
 
         if (texture_id != 0) {
-            debug("Rendering texture %u with %u.", texture_id, gl_program);
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glUseProgram(gl_program);
@@ -354,7 +352,6 @@ public class View : Gtk.GLArea {
     }
 
     private void on_surface_committed(Surface surface) {
-        stderr.printf("Surface committed\n");
         queue_render();
     }
 }

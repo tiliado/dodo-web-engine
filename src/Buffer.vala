@@ -109,7 +109,6 @@ public class Buffer : GLib.Object {
 
         int width, height;
         assert(Buffer.get_size(wl_buffer, out width, out height));
-        debug("Texture imported %u %d×%d", (uint) texture, width, height);
 
         return new Buffer(display, wl_buffer, gl_context, texture, released, width, height);
     }
