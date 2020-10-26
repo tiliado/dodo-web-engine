@@ -9,6 +9,7 @@ from PySide2.QtQuick import QQuickItem, QQuickRenderControl, QQuickWindow
 
 
 from wevf.framebuffers import FramebufferController, Framebuffer
+from wevf.gl import RenderContext, get_default_format
 
 
 class QmlOffscreenRenderer:
@@ -20,9 +21,9 @@ class QmlOffscreenRenderer:
         controller: The controller of a framebuffer life cycle.
     """
 
-    context: QOpenGLContext = None
     size: QSize = QSize(0, 0)
     initialized: bool = False
+    ctx: RenderContext = None
 
     _surface: QOffscreenSurface = None
     _control: QQuickRenderControl = None
@@ -40,9 +41,6 @@ class QmlOffscreenRenderer:
         self.qmlUrl = qmlUrl
         self._controller = controller
 
-    def makeCurrent(self) -> bool:
-        return self.context.makeCurrent(self._surface)
-
     def initialize(self, size: QSize, shareContext: QOpenGLContext) -> None:
         """
         Initialize offscreen renderer.
@@ -58,21 +56,19 @@ class QmlOffscreenRenderer:
         if self.initialized:
             raise RuntimeError('Already initialized')
 
-        format = QSurfaceFormat()
-        format.setDepthBufferSize(24)
-        format.setStencilBufferSize(8)
         context = QOpenGLContext()
-        context.setFormat(format)
         context.setShareContext(shareContext)
+        context.setFormat(get_default_format(gles=False))
         context.create()
+        assert not context.isOpenGLES(), "We need glGetTexImage from OpenGL"
 
         self.size = size
-        self.context = context
 
         # Create offscreen surface with initialized format
-        self._surface = surface = QOffscreenSurface()
+        surface = QOffscreenSurface()
         surface.setFormat(context.format())
         surface.create()
+        self.ctx = RenderContext(context, surface)
 
         # Set up quick rendering
         self._control = control = QQuickRenderControl()
@@ -123,10 +119,9 @@ class QmlOffscreenRenderer:
 
         self.size = size
 
-        if self._rootItem and self.makeCurrent():
+        if self._rootItem and self.ctx.makeCurrent():
             self._destroyFrameBuffer()
             self._createFrameBuffer()
-            self.context.doneCurrent()
             self._updateSizes()
 
     def sendEvent(self, event: QEvent) -> None:
@@ -175,23 +170,23 @@ class QmlOffscreenRenderer:
         rootObject.setParentItem(self._window.contentItem())
         self._window.contentItem().forceActiveFocus()
         self._updateSizes()
-        self.makeCurrent()
-        self._control.initialize(self.context)
+        self.ctx.makeCurrent()
+        self._control.initialize(self.ctx.glContext)
 
     def _createFrameBuffer(self):
         """Create framebuffer for quick window."""
         print(f'QmlOffscreenRenderer._createFrameBufferObject: {self.size}')
-        self.makeCurrent()
+        self.ctx.makeCurrent()
         self._framebuffers = (
-            self._controller.create_framebuffer(self.size),
-            self._controller.create_framebuffer(self.size),
+            self._controller.create_framebuffer(self.ctx, self.size),
+            self._controller.create_framebuffer(self.ctx, self.size),
         )
         fb = self._framebuffers[0]
         self._window.setRenderTarget(fb.id, fb.size)
 
     def _destroyFrameBuffer(self):
         """Release framebuffer."""
-        self.makeCurrent()
+        self.ctx.makeCurrent()
         for fb in self._framebuffers:
             self._controller.release_framebuffer(fb)
         self._framebuffers = None
@@ -206,7 +201,7 @@ class QmlOffscreenRenderer:
 
     def _polishSyncRender(self):
         """Polish, sync & render."""
-        if not self.initialized or not self.makeCurrent():
+        if not self.initialized or not self.ctx.makeCurrent():
             return
 
         control = self._control
@@ -216,19 +211,17 @@ class QmlOffscreenRenderer:
 
     def _render(self):
         """Render QML component to a texture."""
-        if not self.initialized or self._framebuffers is None or not self.makeCurrent():
+        if not self.initialized or self._framebuffers is None or not self.ctx.makeCurrent():
             return
 
         self._control.render()
         self._window.resetOpenGLState()
         QOpenGLFramebufferObject.bindDefault()
-        self.context.functions().glFlush()
-        self.context.swapBuffers(self._surface)
+        self.ctx.glContext.functions().glFlush()
         current_fb, next_fb = self._framebuffers
         self._controller.framebuffer_rendered(current_fb)
         self._framebuffers = next_fb, current_fb
         self._window.setRenderTarget(next_fb.id, next_fb.size)
-
 
     @Slot()
     def _onComponentStatusChanged(self):

@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import mmap
-from os import fspath
 from typing import Union
 
-from OpenGL import GL
 from PySide2.QtCore import QUrl, QSize, Slot, QSocketNotifier
 from PySide2.QtGui import QSurfaceFormat, QOpenGLContext, QOffscreenSurface
 from pywayland.client import Display
 from pywayland.utils import AnonymousFile
 
-from wevf.framebuffers import QtFramebufferController
+from wevf.framebuffers import Framebuffer, TextureFramebufferController
 from wevf.renderers import QmlOffscreenRenderer
-from wevf.utils import get_data_path
+from wevf.gl import GL
 from wl_protocols.wayland import WlShm, WlCompositor
 from wl_protocols.wevp_embed import WevpEmbedder
 
@@ -35,23 +33,16 @@ class Client:
         self.fd_notifier = None
 
         if gl_context is None:
-            surface_format = QSurfaceFormat()
-            surface_format.setDepthBufferSize(24)
-            surface_format.setStencilBufferSize(8)
             gl_context = QOpenGLContext()
-            gl_context.setFormat(surface_format)
+            gl_context.setFormat(QSurfaceFormat.defaultFormat())
             gl_context.create()
 
+        assert gl_context.isOpenGLES()
         self.gl_context = gl_context
         surface = QOffscreenSurface()
         surface.setFormat(gl_context.format())
         surface.create()
         gl_context.makeCurrent(surface)
-        print(GL.glGetString(GL.GL_VERSION))
-
-        n = GL.glGetIntegerv(GL.GL_NUM_EXTENSIONS)
-        for i in range(n):
-            print(GL.glGetStringi(GL.GL_EXTENSIONS, i))
 
     def __del__(self):
         print("Disconnecting from", self.display)
@@ -136,8 +127,7 @@ class View:
         self.buffer = None
         self.last_time = 0
 
-        self.controller = QtFramebufferController()
-
+        self.controller = TextureFramebufferController()
         self.renderer = QmlOffscreenRenderer(qml_view, self.controller)
         self.renderer.initialize(QSize(width, height), self.gl_context)
         self.controller.texture_rendered.connect(self.on_texture_rendered)
@@ -201,9 +191,10 @@ class View:
             self.redraw()
 
     @Slot()
-    def on_texture_rendered(self, textureId):
-        GL.glBindTexture(GL.GL_TEXTURE_2D, textureId)
-        data = GL.glGetTexImage(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE)
+    def on_texture_rendered(self, framebuffer: Framebuffer):
+        framebuffer.ctx.makeCurrent()
+        GL.glBindTexture(GL.GL_TEXTURE_2D, framebuffer.texture)
+        data = GL.glGetTexImage(GL.GL_TEXTURE_2D, 0, GL.GL_BGRA, GL.GL_UNSIGNED_BYTE)
         self.shm_data.seek(0)
         self.shm_data.write(data)
         self.commit()

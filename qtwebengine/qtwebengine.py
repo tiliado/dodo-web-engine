@@ -6,7 +6,9 @@ import signal
 import sys
 from typing import List
 
-from PySide2.QtCore import QUrl
+from PySide2.QtCore import QUrl, Qt
+from PySide2.QtGui import QGuiApplication
+from PySide2.QtWebEngine import QtWebEngine
 from PySide2.QtWidgets import QApplication
 
 from wevf.client import Client
@@ -19,10 +21,13 @@ WAYLAND_DISPLAY = os.environ.get("DEMO_DISPLAY", os.environ.get("WAYLAND_DISPLAY
 def run(argv: List[str]):
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+    # Must be done before QGuiApplication is created and before window’s QPlatformOpenGLContext is created.
+    QtWebEngine.initialize()
     initialize_gl()
 
-    app = QApplication(argv)
-    qml_view = QUrl(os.fspath(get_data_path("view.qml")))
+    app = QGuiApplication(argv)
+
+    qml_view = QUrl(os.fspath(get_data_path("webview.qml")))
     client = Client(WAYLAND_DISPLAY, qml_view)
     client.connect()
     client.attach()
