@@ -3,6 +3,7 @@ using GL;
 namespace Wevf {
 
 public class Buffer : GLib.Object {
+    private uint id;
     private unowned Wl.Buffer? wl_buffer;
     private bool wl_buffer_released;
     private unowned Gdk.GLContext gl_context;
@@ -13,6 +14,7 @@ public class Buffer : GLib.Object {
     private unowned Display display;
 
     public Buffer(Display display, Wl.Buffer wl_buffer, Gdk.GLContext gl_context, GLuint texture, bool released, int width, int height) {
+        this.id = wl_buffer.get_id();
         this.display = display;
         this.wl_buffer = wl_buffer;
         this.gl_context = gl_context;
@@ -26,12 +28,12 @@ public class Buffer : GLib.Object {
     }
 
     ~Buffer() {
-        debug("~Buffer");
+        debug("~Buffer %u", id);
         release();
         destroy_texture();
     }
 
-    public signal void destroyed();
+    public signal void destroyed(Wl.Buffer wl_buffer);
 
     public void release() {
         if (wl_buffer_released || wl_buffer == null) {
@@ -69,18 +71,26 @@ public class Buffer : GLib.Object {
         }
     }
 
-    public static Buffer? import(Display display, Wl.Buffer wl_buffer, Gdk.GLContext gl_context) {
-        GLuint texture = 0;
-        bool released = false;
+    public void update(GLuint texture, bool released, int width, int height) {
+        destroy_texture();
+        this.texture = texture;
+        this.wl_buffer_released = released;
+        this.width = width;
+        this.height = height;
+    }
+
+    public static bool import(Wl.Buffer wl_buffer, out GLuint texture, out bool released, out int width, out int height) {
+        texture = 0;
+        width = height = 0;
+        released = false;
 
         unowned Wl.ShmBuffer? shm_buffer = Wl.ShmBuffer.from_resource(wl_buffer);
         if (shm_buffer != null) {
             uint fmt = shm_buffer.get_format();
             int stride = shm_buffer.get_stride();
-            int width = shm_buffer.get_width();
-            int height = shm_buffer.get_height();
+            width = shm_buffer.get_width();
+            height = shm_buffer.get_height();
 
-            gl_context.make_current();
             shm_buffer.begin_access();
             void *data = shm_buffer.get_data();
             texture = Textures.load_from_pixels(data, fmt, width, height, stride);
@@ -91,26 +101,23 @@ public class Buffer : GLib.Object {
              * store without copying, e.g. using wl_drm.
              */
             wl_buffer.send_release();
-            display.dispatch();
             released = true;
         } else {
             critical("Cannot upload texture: unknown buffer type");
             wl_buffer.post_error(0, "unknown buffer type"); // Disconnect the client with error.
-            return null;
+            return false;
         }
 
         if (texture == 0) {
             // This is our failure, don't disconnect the client.
             critical("Failed to upload texture");
             wl_buffer.send_release();
-            display.dispatch();
-            return null;
+            released = true;
+            return false;
         }
 
-        int width, height;
         assert(Buffer.get_size(wl_buffer, out width, out height));
-
-        return new Buffer(display, wl_buffer, gl_context, texture, released, width, height);
+        return true;
     }
 
     public static bool get_size(Wl.Buffer wl_buffer, out int width, out int height) {
@@ -127,7 +134,7 @@ public class Buffer : GLib.Object {
 
     private void on_wl_buffer_destroyed(Listener listener, void* data) {
         listener.disconnect();
-        destroyed();
+        destroyed(wl_buffer);
         wl_buffer = null;
         unref();
     }

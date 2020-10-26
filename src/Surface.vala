@@ -28,11 +28,13 @@ public class Surface : GLib.Object {
     private unowned Gdk.GLContext? gl_context = null;
     private unowned Wl.Client client;
     private unowned Display display;
+    private HashTable<unowned Wl.Buffer, unowned Buffer> buffers;
 
     public Surface(Display display, Wl.Client client, int version, uint id) {
         this.id = id;
         this.display = display;
         this.client = client;
+        buffers = new HashTable<unowned Wl.Buffer, unowned Buffer>(direct_hash, direct_equal);
         debug("%s: New surface version=%d, id=%u.", Utils.client_info(client), version, id);
         assert(1 <= version <= SURFACE_VERSION);
         unowned Wl.Surface wl_surface = Wl.Surface.create(client, ref Wl.surface_interface, version, id);
@@ -128,23 +130,39 @@ public class Surface : GLib.Object {
         }
 
         this.buffer = null;
-        unowned Wl.Buffer? resource = committed.buffer;
-        if (resource == null) {
+        unowned Wl.Buffer? wl_buffer = committed.buffer;
+        if (wl_buffer == null) {
             return;
         }
 
         if (gl_context == null) {
             warning("No gl context");
-            resource.send_release();
+            wl_buffer.send_release();
             return;
         }
 
-        Buffer? buffer = Buffer.import(display, resource, gl_context);
-        if (buffer == null) {
+        bool released;
+        GLuint texture;
+        int width;
+        int height;
+        gl_context.make_current();
+        if (!Buffer.import(wl_buffer, out texture, out released, out width, out height)) {
             critical("Failed to upload buffer");
+            if (!released) {
+                wl_buffer.send_release();
+            }
+            display.dispatch();
             return;
         }
-
+        Buffer? buffer = buffers[wl_buffer];
+        if (buffer == null) {
+            buffer = new Buffer(display, wl_buffer, gl_context, texture, released, width, height);
+            buffers[wl_buffer] = buffer;
+            buffer.destroyed.connect(on_buffer_destroyed);
+        } else {
+            buffer.update(texture, released, width, height);
+        }
+        display.dispatch();
         this.buffer = buffer;
     }
 
@@ -171,6 +189,11 @@ public class Surface : GLib.Object {
         unowned Wl.Callback callback_resource = (Wl.Callback) resource;
         self.pending.steal_frame_callback(callback_resource);
         self.committed.steal_frame_callback(callback_resource);
+    }
+
+    private void on_buffer_destroyed(Buffer buffer, Wl.Buffer wl_buffer) {
+        buffer.destroyed.disconnect(on_buffer_destroyed);
+        buffers.remove(wl_buffer);       
     }
 }
 
