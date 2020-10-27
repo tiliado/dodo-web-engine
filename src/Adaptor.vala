@@ -15,10 +15,13 @@ public class Adaptor : Gtk.EventBox {
     public uint height;
     public uint scale;
     private uint resize_timeout_id = 0;
+    private Gtk.IMContextSimple im_context;
+    private string? im_string = null;
 
     public Adaptor(Display display, View widget) {
         this.display = display;
         this.widget = widget;
+        this.im_context = new Gtk.IMContextSimple();
         widget.show();
         add(widget);
         above_child = true;
@@ -47,9 +50,11 @@ public class Adaptor : Gtk.EventBox {
         focus_in_event.connect(on_focus_event);
         focus_out_event.connect(on_focus_event);
         scroll_event.connect(on_scroll_event);
+        realize.connect_after(on_realize);
     }
 
     ~Adaptor() {
+        realize.disconnect(on_realize);
         scroll_event.disconnect(on_scroll_event);
         focus_in_event.disconnect(on_focus_event);
         focus_out_event.disconnect(on_focus_event);
@@ -107,6 +112,16 @@ public class Adaptor : Gtk.EventBox {
     }
 
     private bool on_key_event(Gdk.EventKey event) {
+        string? str = ((unichar) Gdk.keyval_to_unicode(event.keyval)).to_string();
+        debug("%s(%s:%s:%s): %u, %u, %u", event.type.to_string(), Gdk.keyval_name(event.keyval), event.str, str, event.keyval, event.hardware_keycode, (uint) event.group);
+        if (im_context.filter_keypress(event)) {
+            if (im_string != null) {
+                str = (owned) im_string;
+            } else {
+                return true;
+            }
+        }
+        
         Wevp.EventType type;
         switch (event.type) {
         case Gdk.EventType.KEY_PRESS:
@@ -118,7 +133,6 @@ public class Adaptor : Gtk.EventBox {
         default:
             return false;
         }
-        string? str = ((unichar) Gdk.keyval_to_unicode(event.keyval)).to_string();
         debug("%s(%s:%s:%s): %u, %u, %u", type.to_string(), Gdk.keyval_name(event.keyval), event.str, str, event.keyval, event.hardware_keycode, (uint) event.group);
         if (view != null) {
             view.send_key_event(type, Gdk.keyval_name(event.keyval), Keyboard.serialize_modifiers(event.state), event.keyval, event.hardware_keycode, (uint) event.state, str);
@@ -150,6 +164,9 @@ public class Adaptor : Gtk.EventBox {
         Wevp.EventType type = event.@in == 0 ? Wevp.EventType.FOCUS_OUT : Wevp.EventType.FOCUS_IN;
         if (type == Wevp.EventType.FOCUS_IN) {
             grab_focus();
+            im_context.focus_in();
+        } else {
+            im_context.focus_out();
         }
         debug("%s", type.to_string());
         if (view != null) {
@@ -209,6 +226,15 @@ public class Adaptor : Gtk.EventBox {
         unowned Adaptor? self = (Adaptor) wl_view.get_user_data();
         var display = self.get_window().get_display();
         self.get_window().set_cursor(new Gdk.Cursor.from_name(display, name));
+    }
+
+    private void on_realize() {
+        im_context.set_client_window(get_window());
+        im_context.commit.connect(on_im_commited);
+    }
+
+    private void on_im_commited(string str) {
+        this.im_string = str;
     }
 }
 
