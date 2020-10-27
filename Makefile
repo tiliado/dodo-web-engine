@@ -14,7 +14,7 @@ build/wevp-embed.c: protocol/wevp-embed.xml | build
 build/wayland-embed: build/wevp-embed.c build/wevp-embed.h $(vala_src)
 	valac -v --save-temps -X -g -X -Ibuild -X '-DG_LOG_DOMAIN="WEVF"' -X -DGL_GLEXT_PROTOTYPES \
 	  --vapidir=./vapi --pkg=wayland-server --pkg=gtk+-3.0 --pkg=wevp --pkg=gl \
-	  -d build -o wayland-embed src/*.vala build/nuvola-embed-protocol.c
+	  -d build -o wayland-embed src/*.vala build/wevp-embed.c
 
 run: all
 	G_MESSAGES_DEBUG=all build/wayland-embed
