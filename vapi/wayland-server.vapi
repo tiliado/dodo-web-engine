@@ -140,6 +140,15 @@ public struct CompositorInterface {
     public CreateRegionFunc create_region;
 }
 
+[SimpleType]
+[CCode (cname = "wl_fixed_t", has_type_id = false)]
+public struct Fixed : int32 {
+    public static Fixed from_double(double d);
+    public static Fixed from_int(double i);
+    public double to_double();
+    public int to_int();
+}
+
 [CCode (cname = "struct wl_interface", has_type_id = false)]
 public struct Interface {
     public string? name;

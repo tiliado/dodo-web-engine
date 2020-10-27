@@ -42,6 +42,41 @@
   <interface name="wevp_view" version="1">
     <description summary="an embedded view"></description>
 
+    <enum name="event_type">
+      <description summary="types of propagated events"></description>
+      <entry name="mouse_press" value="0" summary="mouse pressed"/>
+      <entry name="mouse_release" value="1" summary="mouse released"/>
+      <entry name="mouse_double_click" value="2" summary="mouse double-click"/>
+      <entry name="mouse_move" value="3" summary="mouse moved"/>
+      <entry name="key_press" value="4" summary="key pressed"/>
+      <entry name="key_release" value="5" summary="key released"/>
+      <entry name="focus_in" value="6" summary="gained the keyboard focus"/>
+      <entry name="focus_out" value="7" summary="lost the keyboard focus"/>
+      <entry name="scroll_up" value="8" summary="scrolling up"/>
+      <entry name="scroll_down" value="9" summary="scrolling down"/>
+      <entry name="scroll_left" value="10" summary="scroolling left"/>
+      <entry name="scroll_right" value="11" summary="scrolling right"/>
+    </enum>
+
+    <enum name="mouse_button">
+      <description summary="types of mouse buttons"></description>
+      <entry name="none" value="0" summary="no button"/>
+      <entry name="left" value="1" summary="left button"/>
+      <entry name="middle" value="2" summary="right button"/>
+      <entry name="right" value="3" summary="middle button"/>
+      <entry name="scroll_up" value="4" summary="scrolling up"/>
+      <entry name="scroll_down" value="5" summary="scrolling down"/>
+      <entry name="scroll_left" value="6" summary="scroolling left"/>
+      <entry name="scroll_right" value="7" summary="scrolling right"/>
+      <entry name="back" value="8" summary="back button"/>
+      <entry name="forward" value="9" summary="forward button"/>
+    </enum>
+
+    <request name="change_cursor">
+      <description summary="change current cursor"></description>
+      <arg name="name" type="string" summary="name of a cursor"/>
+    </request>
+
     <event name="resized">
       <description summary="set new size"></description>
       <arg name="width" type="uint" summary="new width in virtual pixels - consult scale factor"/>
@@ -52,6 +87,50 @@
       <description summary="set new scale factor"></description>
       <arg name="scale" type="uint" summary="scale factor"/>
     </event>
+
+    <event name="mouse_event">
+      <description summary="mouse event"></description>
+      <arg name="type" type="uint" enum="wevp_view.event_type" summary="type of the event"/>
+      <arg name="mouse" type="uint" enum="wevp_view.mouse_button" summary="type of the mouse button"/>
+      <arg name="modifiers" type="uint" summary="keyboard modifiers"/>
+      <arg name="local_x" type="fixed" summary="x coordinate relative to the widget top left corner"/>
+      <arg name="local_y" type="fixed" summary="y coordinate relative to the widget top left corner"/>
+      <arg name="window_x" type="fixed" summary="x coordinate relative to the window top left corner"/>
+      <arg name="window_y" type="fixed" summary="y coordinate relative to the window top left corner"/>
+      <arg name="screen_x" type="fixed" summary="x coordinate relative to the screen top left corner"/>
+      <arg name="screen_y" type="fixed" summary="y coordinate relative to the screen top left corner"/>
+    </event>
+
+    <event name="key_event">
+      <description summary="key event"></description>
+      <arg name="type" type="uint" enum="wevp_view.event_type" summary="type of the event"/>
+      <arg name="name" type="string" summary="a name of the key"/>
+      <arg name="modifiers" type="uint" summary="keyboard modifiers"/>
+      <arg name="native_modifiers" type="uint" summary="native keyboard modifiers"/>
+      <arg name="keyval" type="uint" summary="the key that was pressed or release"/>
+      <arg name="keycode" type="uint" summary="the raw code of the key that was pressed or released"/>
+      <arg name="text" type="string" summary="a string containing an approximation of the text that would result from this keypress"/>
+    </event>
+
+    <event name="focus_event">
+      <description summary="focus change event"></description>
+      <arg name="type" type="uint" enum="wevp_view.event_type" summary="type of the event"/>
+    </event>
+    
+    <event name="scroll_event">
+      <description summary="scrolling event"></description>
+      <arg name="type" type="uint" enum="wevp_view.event_type" summary="type of the event"/>
+      <arg name="modifiers" type="uint" summary="keyboard modifiers"/>
+      <arg name="delta_x" type="fixed" summary="x delta coordinate of the scroll"/>
+      <arg name="delta_y" type="fixed" summary="y delta coordinate of the scroll"/>
+      <arg name="local_x" type="fixed" summary="x coordinate relative to the widget top left corner"/>
+      <arg name="local_y" type="fixed" summary="y coordinate relative to the widget top left corner"/>
+      <arg name="window_x" type="fixed" summary="x coordinate relative to the window top left corner"/>
+      <arg name="window_y" type="fixed" summary="y coordinate relative to the window top left corner"/>
+      <arg name="screen_x" type="fixed" summary="x coordinate relative to the screen top left corner"/>
+      <arg name="screen_y" type="fixed" summary="y coordinate relative to the screen top left corner"/>
+    </event>
+    
   </interface>
 
 </protocol>

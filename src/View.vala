@@ -49,7 +49,6 @@ public class View : Gtk.GLArea {
     private int width = 0;
     private int height = 0;
     private Surface? surface;
-    private Embedder embedder;
     private uint frames = 0;
     private bool crashed = false;
 
@@ -57,12 +56,10 @@ public class View : Gtk.GLArea {
         get; set; default = Gdk.RGBA() {red = 0.1, green = 0.1, blue = 0.1, alpha = 1.0};
     }
 
-    public View(Embedder embedder) {
-        this.embedder = embedder;
+    public View() {
         realize.connect(on_realize);
         unrealize.connect(on_unrealize);
         set_auto_render(true);
-        embedder.add_view(this);
     }
 
     ~View() {

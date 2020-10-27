@@ -23,7 +23,7 @@ void main(string[] args) {
         return false;
     });
 
-    var view = new View(display.embedder);
+    var view = display.embedder.add_view(new View());
     view.show();
     window.add(view);
 

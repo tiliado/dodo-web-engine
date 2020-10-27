@@ -32,12 +32,13 @@ public class Embedder : GLib.Object {
 
     public signal void destroyed();
 
-    public void add_view(View widget) {
+    public Adaptor add_view(View widget) {
         var adaptor = new Adaptor(display, widget);
         widgets[widget] = adaptor;
         if (client != null) {
             request_view(adaptor);
         }
+        return adaptor;
     }
 
     private void request_view(Adaptor adaptor) {
