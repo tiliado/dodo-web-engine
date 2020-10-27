@@ -134,12 +134,6 @@ class QmlOffscreenRenderer(QObject):
         Args:
             event: The event to send.
         """
-        if event.type() == QEvent.Type.FocusOut:
-            # Ignored - cannot get focus back reliably :-(
-            return
-
-        # self._window.contentItem().forceActiveFocus()
-
         QCoreApplication.sendEvent(self._window, event)
         cursor = self._window.cursor()
         if cursor != self._cursor:

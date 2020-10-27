@@ -7,6 +7,11 @@ from wl_protocols.wevp_embed import WevpView
 EventType = WevpView.event_type
 MouseButton = WevpView.mouse_button
 
+FOCUS_EVENTS = {
+    EventType.focus_in: QEvent.FocusIn,
+    EventType.focus_out: QEvent.FocusOut,
+}
+
 MOUSE_EVENTS = {
     EventType.mouse_double_click: QEvent.MouseButtonDblClick,
     EventType.mouse_move: QEvent.MouseMove,

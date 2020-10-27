@@ -2,11 +2,11 @@ import mmap
 
 from OpenGL import GL
 from PySide2.QtCore import QUrl, QSize, QPointF, QPoint, Slot
-from PySide2.QtGui import Qt, QMouseEvent, QKeyEvent, QWheelEvent, QCursor
+from PySide2.QtGui import Qt, QMouseEvent, QKeyEvent, QWheelEvent, QCursor, QFocusEvent
 from pywayland.utils import AnonymousFile
 
 from wevf.events import MOUSE_BUTTONS, EventType, MOUSE_EVENTS, deserialize_modifiers, KEY_EVENTS, get_qt_key, \
-    WHEEL_ANGLES
+    WHEEL_ANGLES, FOCUS_EVENTS
 from wevf.framebuffers import TextureFramebufferController, Framebuffer
 from wevf.renderers import QmlOffscreenRenderer
 from wl_protocols.wayland import WlShm
@@ -38,6 +38,7 @@ class View:
         view.dispatcher["mouse_event"] = self.on_mouse_event
         view.dispatcher["scroll_event"] = self.on_scroll_event
         view.dispatcher["key_event"] = self.on_key_event
+        view.dispatcher["focus_event"] = self.on_focus_event
 
         self.create_buffer()
         self.redraw()
@@ -160,6 +161,10 @@ class View:
             Qt.NoScrollPhase,
             False
         )
+        self.renderer.sendEvent(event)
+
+    def on_focus_event(self, wl_view, type_):
+        event = QFocusEvent(FOCUS_EVENTS[type_])
         self.renderer.sendEvent(event)
 
     def on_buffer_released(self, wl_buffer):
