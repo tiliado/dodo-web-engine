@@ -118,6 +118,4 @@ class TextureFramebufferController(QObject, FramebufferController):
         return TextureFramebuffer(ctx, size)
 
     def framebuffer_rendered(self, framebuffer: TextureFramebuffer) -> None:
-        textureID = framebuffer.texture
-        print("texture rendered", textureID)
         self.texture_rendered.emit(framebuffer)

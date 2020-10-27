@@ -1,18 +1,17 @@
 from __future__ import annotations
 from typing import Optional, Tuple
 
-from PySide2.QtCore import QSize, QUrl, QTimer, QCoreApplication, Slot, QEvent
-from PySide2.QtGui import QOpenGLFramebufferObject, QOpenGLContext, QOffscreenSurface, QMouseEvent, \
-    QWheelEvent, QSurfaceFormat
+from PySide2.QtCore import QSize, QUrl, QTimer, QCoreApplication, Slot, QEvent, Signal, QObject
+from PySide2.QtGui import QOpenGLFramebufferObject, QOpenGLContext, QOffscreenSurface, QCursor
 from PySide2.QtQml import QQmlComponent, QQmlEngine
 from PySide2.QtQuick import QQuickItem, QQuickRenderControl, QQuickWindow
 
-
+from wevf.events import get_cursor_name
 from wevf.framebuffers import FramebufferController, Framebuffer
 from wevf.gl import RenderContext, get_default_format
 
 
-class QmlOffscreenRenderer:
+class QmlOffscreenRenderer(QObject):
     """
     Offscreen rendering of a QML component.
 
@@ -20,6 +19,8 @@ class QmlOffscreenRenderer:
         qmlUrl: The URL of a QML component to render.
         controller: The controller of a framebuffer life cycle.
     """
+
+    cursor_changed = Signal((QCursor, str))
 
     size: QSize = QSize(0, 0)
     initialized: bool = False
@@ -35,6 +36,7 @@ class QmlOffscreenRenderer:
     _framebuffers: Optional[Tuple[Framebuffer, Framebuffer]] = None
     _component: QQmlComponent = None
     _rootItem: QQuickItem = None
+    _cursor: QCursor = None
 
     def __init__(self, qmlUrl: QUrl, controller: FramebufferController):
         super().__init__()
@@ -73,6 +75,7 @@ class QmlOffscreenRenderer:
         # Set up quick rendering
         self._control = control = QQuickRenderControl()
         self._window = window = QQuickWindow(control)
+        self._cursor = self._window.cursor()
         self._engine = engine = QQmlEngine()
         if not engine.incubationController():
             engine.setIncubationController(window.incubationController())
@@ -135,18 +138,13 @@ class QmlOffscreenRenderer:
             # Ignored - cannot get focus back reliably :-(
             return
 
-        if isinstance(event, QMouseEvent):
-            # `windowPos` is replaced with `localPos` as it has no meaning in offscreen rendering.
-            event = QMouseEvent(event.type(), event.localPos(), event.screenPos(),
-                                event.button(), event.buttons(), event.modifiers())
+        # self._window.contentItem().forceActiveFocus()
 
-        elif isinstance(event, QWheelEvent):
-            event = QWheelEvent(event.position(), event.position(), event.pixelDelta(),
-                                event.angleDelta(), event.buttons(), event.modifiers(),
-                                event.phase(), event.inverted(), event.source())
-
-        self._window.contentItem().forceActiveFocus()
         QCoreApplication.sendEvent(self._window, event)
+        cursor = self._window.cursor()
+        if cursor != self._cursor:
+            self.cursor_changed.emit(cursor, get_cursor_name(cursor.shape()))
+            self._cursor = cursor
 
     def _attachRootItem(self):
         """Attach root QML item to Quick window."""
