@@ -94,6 +94,7 @@ public class Adaptor : Gtk.EventBox {
         this.surface = surface;
         view.set_implementation(&Adaptor.impl, this, null);
         widget.set_surface(surface);
+        view.send_focus_event(has_focus ? Wevp.EventType.FOCUS_IN : Wevp.EventType.FOCUS_OUT);
     }
 
     private void on_size_allocate(Gtk.Allocation alloc) {
