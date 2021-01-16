@@ -50,11 +50,15 @@ public class Adaptor : Gtk.EventBox {
         focus_in_event.connect(on_focus_event);
         focus_out_event.connect(on_focus_event);
         scroll_event.connect(on_scroll_event);
+        enter_notify_event.connect(on_crossing_event);
+        leave_notify_event.connect(on_crossing_event);
         realize.connect_after(on_realize);
     }
 
     ~Adaptor() {
         realize.disconnect(on_realize);
+        enter_notify_event.disconnect(on_crossing_event);
+        leave_notify_event.disconnect(on_crossing_event);
         scroll_event.disconnect(on_scroll_event);
         focus_in_event.disconnect(on_focus_event);
         focus_out_event.disconnect(on_focus_event);
@@ -215,6 +219,24 @@ public class Adaptor : Gtk.EventBox {
         }
         return false;
         
+    }
+
+    private bool on_crossing_event(Gdk.EventCrossing event) {
+        Wevp.EventType type;
+        switch (event.type) {
+        case Gdk.EventType.ENTER_NOTIFY:
+            type = Wevp.EventType.ENTER;
+            break;
+        case Gdk.EventType.LEAVE_NOTIFY:
+            type = Wevp.EventType.LEAVE;
+            break;
+        default:
+            return false;
+        }
+        if (view != null) {
+            view.send_crossing_event(type, event.x, event.y, event.x, event.y, event.x_root, event.y_root);
+        }
+        return true;
     }
 
     public override bool focus(Gtk.DirectionType direction) {

@@ -56,6 +56,8 @@
       <entry name="scroll_down" value="9" summary="scrolling down"/>
       <entry name="scroll_left" value="10" summary="scroolling left"/>
       <entry name="scroll_right" value="11" summary="scrolling right"/>
+      <entry name="enter" value="12" summary="mouse entered"/>
+      <entry name="leave" value="13" summary="mouse left"/>
     </enum>
 
     <enum name="mouse_button">
@@ -115,6 +117,17 @@
     <event name="focus_event">
       <description summary="focus change event"></description>
       <arg name="type" type="uint" enum="wevp_view.event_type" summary="type of the event"/>
+    </event>
+    
+    <event name="crossing_event">
+      <description summary="enter or leave event"></description>
+      <arg name="type" type="uint" enum="wevp_view.event_type" summary="type of the event"/>
+      <arg name="local_x" type="fixed" summary="x coordinate relative to the widget top left corner"/>
+      <arg name="local_y" type="fixed" summary="y coordinate relative to the widget top left corner"/>
+      <arg name="window_x" type="fixed" summary="x coordinate relative to the window top left corner"/>
+      <arg name="window_y" type="fixed" summary="y coordinate relative to the window top left corner"/>
+      <arg name="screen_x" type="fixed" summary="x coordinate relative to the screen top left corner"/>
+      <arg name="screen_y" type="fixed" summary="y coordinate relative to the screen top left corner"/>
     </event>
     
     <event name="scroll_event">
