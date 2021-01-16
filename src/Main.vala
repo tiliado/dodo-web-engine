@@ -5,7 +5,15 @@ void main(string[] args) {
     var wl_display = new Wl.Display();
     assert(wl_display != null);
     wl_display.init_shm();
-    wl_display.add_socket("wevf-demo");
+
+    unowned string? wayland_socket = Environment.get_variable("DEMO_DISPLAY");
+    if (wayland_socket == null) {
+        wayland_socket = Environment.get_variable("WAYLAND_DISPLAY");
+        if (wayland_socket == null) {
+            wayland_socket = "wevf-demo";
+        }
+    }
+    wl_display.add_socket(wayland_socket);
 
     var display = new Display((owned) wl_display);
     display.attach(MainContext.ref_thread_default());
