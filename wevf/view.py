@@ -1,8 +1,8 @@
 import mmap
 
 from OpenGL import GL
-from PySide2.QtCore import QUrl, QSize, QPointF, QPoint, Slot
-from PySide2.QtGui import Qt, QMouseEvent, QKeyEvent, QWheelEvent, QCursor, QFocusEvent
+from PySide2.QtCore import QUrl, QSize, QPointF, QPoint, Slot, QEvent
+from PySide2.QtGui import Qt, QMouseEvent, QKeyEvent, QWheelEvent, QCursor, QFocusEvent, QEnterEvent
 from pywayland.utils import AnonymousFile
 
 from wevf.events import MOUSE_BUTTONS, EventType, MOUSE_EVENTS, deserialize_modifiers, KEY_EVENTS, get_qt_key, \
@@ -161,6 +161,14 @@ class View:
             Qt.NoScrollPhase,
             False
         )
+        self.renderer.sendEvent(event)
+
+    def on_crossing_event(self, wl_view, type_, local_x, local_y, window_x, window_y, screen_x, screen_y):
+        if type_ == EventType.enter:
+            event = QEnterEvent(QPointF(local_x, local_y), QPointF(window_x, window_y), QPointF(screen_x, screen_y))
+        else:
+            event = QEvent(QEvent.Leave)
+
         self.renderer.sendEvent(event)
 
     def on_focus_event(self, wl_view, type_):
