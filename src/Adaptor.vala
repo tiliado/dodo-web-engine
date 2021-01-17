@@ -1,9 +1,9 @@
 namespace Wevf {
 
-public class Adaptor : Gtk.EventBox {
+public class View : Gtk.EventBox {
     
     private static Wevp.ViewInterface impl = {
-        Adaptor.change_cursor
+        View.change_cursor
     };
     private unowned Display display;
     public unowned Canvas canvas;
@@ -18,7 +18,7 @@ public class Adaptor : Gtk.EventBox {
     private Gtk.IMContextSimple im_context;
     private string? im_string = null;
 
-    public Adaptor(Display display, Canvas canvas) {
+    public View(Display display, Canvas canvas) {
         this.display = display;
         this.canvas = canvas;
         this.im_context = new Gtk.IMContextSimple();
@@ -55,7 +55,7 @@ public class Adaptor : Gtk.EventBox {
         realize.connect_after(on_realize);
     }
 
-    ~Adaptor() {
+    ~View() {
         realize.disconnect(on_realize);
         enter_notify_event.disconnect(on_crossing_event);
         leave_notify_event.disconnect(on_crossing_event);
@@ -101,7 +101,7 @@ public class Adaptor : Gtk.EventBox {
         this.client = client;
         this.view = view;
         this.surface = surface;
-        view.set_implementation(&Adaptor.impl, this, null);
+        view.set_implementation(&View.impl, this, null);
         canvas.set_surface(surface);
         view.send_focus_event(has_focus ? Wevp.EventType.FOCUS_IN : Wevp.EventType.FOCUS_OUT);
     }
@@ -251,7 +251,7 @@ public class Adaptor : Gtk.EventBox {
     }
 
     private static void change_cursor(Wl.Client client, Wevp.View wl_view, string? name) {
-        unowned Adaptor? self = (Adaptor) wl_view.get_user_data();
+        unowned View? self = (View) wl_view.get_user_data();
         var display = self.get_window().get_display();
         self.get_window().set_cursor(new Gdk.Cursor.from_name(display, name));
     }

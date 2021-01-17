@@ -9,7 +9,7 @@ public class Embedder : GLib.Object {
     public Wl.Global glob;
     private unowned Display display;
     private HashTable<unowned Wl.Client, unowned Wevp.Embedder> bound;
-    private List<unowned Adaptor> adaptors;
+    private List<unowned View> views;
     private unowned Wl.Client? client;
     private Compositor compositor;
 
@@ -34,38 +34,38 @@ public class Embedder : GLib.Object {
     /**
      * Emitted when an orphaned view is available.
      *
-     * You must hold the reference to adaptor it it will be destroyed.
+     * You must hold the reference to view it it will be destroyed.
      */
-    public signal void orphaned_view(Adaptor adaptor);
+    public signal void orphaned_view(View view);
 
     /**
-     * Add a new view for rendering.
+     * Add a new canvas for rendering.
      *
-     * You must hold the reference to adaptor it it will be destroyed.
+     * You must hold the reference to view it it will be destroyed.
      */
-    public Adaptor add_view(Canvas canvas) {
-        var adaptor = new Adaptor(display, canvas);
-        adaptor.weak_ref(on_adaptor_destroyed);
-        adaptors.prepend(adaptor);
+    public View add_canvas(Canvas canvas) {
+        var view = new View(display, canvas);
+        view.weak_ref(on_adaptor_destroyed);
+        views.prepend(view);
         if (client != null) {
-            request_view(adaptor);
+            request_view(view);
         }
-        return adaptor;
+        return view;
     }
 
     private void on_adaptor_destroyed(GLib.Object object) {
-        adaptors.remove((Adaptor) object);
+        views.remove((View) object);
     }
 
-    private void request_view(Adaptor adaptor) {
+    private void request_view(View view) {
         debug("Request view %s.", Utils.client_info(client));
-        unowned Canvas canvas = adaptor.canvas;
+        unowned Canvas canvas = view.canvas;
         uint width = (uint) canvas.get_allocated_width();
         uint height = (uint) canvas.get_allocated_height();
         uint scale = (uint) canvas.scale_factor;
         debug("Window %u×%u factor %u.", width, height, scale);
-        adaptor.serial = display.wl_display.next_serial();
-        bound[client].send_view_requested(adaptor.serial, width, height, scale);
+        view.serial = display.wl_display.next_serial();
+        bound[client].send_view_requested(view.serial, width, height, scale);
     }
 
     private static void bind(Wl.Client client, void *data, uint version, uint id) {
@@ -82,9 +82,9 @@ public class Embedder : GLib.Object {
 
         if (self.client == null) {
             self.client = client;
-            foreach (unowned Adaptor adaptor in self.adaptors) {
-                if (adaptor.client == null) {
-                    self.request_view(adaptor);
+            foreach (unowned View view in self.views) {
+                if (view.client == null) {
+                    self.request_view(view);
                 }
             }
         }
@@ -100,34 +100,34 @@ public class Embedder : GLib.Object {
     ) {
         debug("%s: New view serial=%u id=%u", Utils.client_info(client), serial, view_id);
         unowned Embedder self = (Embedder) wl_embedder.get_user_data();
-        Adaptor? adaptor = null;
+        View? view = null;
         
         if (serial == 0) {
             var canvas = new Canvas();
-            adaptor = new Adaptor(self.display, canvas);
-            adaptor.weak_ref(self.on_adaptor_destroyed);
-            self.adaptors.prepend(adaptor);
-            self.orphaned_view(adaptor);
+            view = new View(self.display, canvas);
+            view.weak_ref(self.on_adaptor_destroyed);
+            self.views.prepend(view);
+            self.orphaned_view(view);
         } else {
-            foreach (unowned Adaptor candidate in self.adaptors) {
+            foreach (unowned View candidate in self.views) {
                 if (candidate.serial == serial) {
                     debug("Found serial %u", serial);
-                    adaptor = candidate;
+                    view = candidate;
                     break;
                 }
             }
         }
 
-        if (adaptor == null) {
+        if (view == null) {
             warning("Serial not found: %u.", serial);
             client.post_implementation_error("Wrong view serial: %u.", serial);
         } else {
-            unowned Wevp.View view = Wevp.View.create(client, ref Wevp.view_interface, VERSION, view_id);
-            adaptor.attach_view(client, view, self.compositor.get_surface(surface.get_id()));
-            adaptor.width = width;
-            adaptor.height = height;
-            adaptor.scale = scale;
-            adaptor.check_state();
+            unowned Wevp.View wl_view = Wevp.View.create(client, ref Wevp.view_interface, VERSION, view_id);
+            view.attach_view(client, wl_view, self.compositor.get_surface(surface.get_id()));
+            view.width = width;
+            view.height = height;
+            view.scale = scale;
+            view.check_state();
         }
     }
 
@@ -143,15 +143,15 @@ public class Embedder : GLib.Object {
                 }
             }
 
-            foreach (unowned Adaptor adaptor in adaptors) {
-                if (adaptor.client == client) {
-                    adaptor.serial = 0;
-                    adaptor.client = null;
-                    adaptor.view = null;
-                    adaptor.surface = null;
+            foreach (unowned View view in views) {
+                if (view.client == client) {
+                    view.serial = 0;
+                    view.client = null;
+                    view.view = null;
+                    view.surface = null;
 
                     if (this.client != null) {
-                        request_view(adaptor);
+                        request_view(view);
                     }
                 }
             }

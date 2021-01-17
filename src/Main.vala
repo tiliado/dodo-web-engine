@@ -38,7 +38,7 @@ void main(string[] args) {
         w.show_all();
     });
 
-    var view = display.embedder.add_view(new Canvas());
+    var view = display.embedder.add_canvas(new Canvas());
     view.show();
     window.add(view);
 
