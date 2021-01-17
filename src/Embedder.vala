@@ -9,7 +9,7 @@ public class Embedder : GLib.Object {
     public Wl.Global glob;
     private unowned Display display;
     private HashTable<unowned Wl.Client, unowned Wevp.Embedder> bound;
-    private HashTable<View, Adaptor> widgets;
+    private List<unowned Adaptor> adaptors;
     private unowned Wl.Client? client;
     private Compositor compositor;
 
@@ -18,7 +18,6 @@ public class Embedder : GLib.Object {
         this.display = display;
         this.compositor = compositor;
         bound = new HashTable<unowned Wl.Client, unowned Wevp.Embedder>(direct_hash, direct_equal);
-        widgets = new HashTable<View, Adaptor>(direct_hash, direct_equal);
         glob = new Wl.Global(display.wl_display, ref Wevp.embedder_interface, VERSION, this, Embedder.bind);
         display.client_destroyed.connect(on_client_destroyed);
         Timeout.add_seconds(10, () => {send_ping(); return true;});
@@ -32,15 +31,30 @@ public class Embedder : GLib.Object {
 
     public signal void destroyed();
 
+    /**
+     * Emitted when an orphaned view is available.
+     *
+     * You must hold the reference to adaptor it it will be destroyed.
+     */
     public signal void orphaned_view(Adaptor adaptor);
 
+    /**
+     * Add a new view for rendering.
+     *
+     * You must hold the reference to adaptor it it will be destroyed.
+     */
     public Adaptor add_view(View widget) {
         var adaptor = new Adaptor(display, widget);
-        widgets[widget] = adaptor;
+        adaptor.weak_ref(on_adaptor_destroyed);
+        adaptors.prepend(adaptor);
         if (client != null) {
             request_view(adaptor);
         }
         return adaptor;
+    }
+
+    private void on_adaptor_destroyed(GLib.Object object) {
+        adaptors.remove((Adaptor) object);
     }
 
     private void request_view(Adaptor adaptor) {
@@ -68,8 +82,7 @@ public class Embedder : GLib.Object {
 
         if (self.client == null) {
             self.client = client;
-            List<unowned Adaptor> candidates =  self.widgets.get_values();
-            foreach (unowned Adaptor adaptor in candidates) {
+            foreach (unowned Adaptor adaptor in self.adaptors) {
                 if (adaptor.client == null) {
                     self.request_view(adaptor);
                 }
@@ -92,11 +105,11 @@ public class Embedder : GLib.Object {
         if (serial == 0) {
             var widget = new View();
             adaptor = new Adaptor(self.display, widget);
-            self.widgets[widget] = adaptor;
+            adaptor.weak_ref(self.on_adaptor_destroyed);
+            self.adaptors.prepend(adaptor);
             self.orphaned_view(adaptor);
         } else {
-            List<unowned Adaptor> candidates =  self.widgets.get_values();
-            foreach (unowned Adaptor candidate in candidates) {
+            foreach (unowned Adaptor candidate in self.adaptors) {
                 if (candidate.serial == serial) {
                     debug("Found serial %u", serial);
                     adaptor = candidate;
@@ -130,8 +143,7 @@ public class Embedder : GLib.Object {
                 }
             }
 
-            List<unowned Adaptor> candidates =  this.widgets.get_values();
-            foreach (unowned Adaptor adaptor in candidates) {
+            foreach (unowned Adaptor adaptor in adaptors) {
                 if (adaptor.client == client) {
                     adaptor.serial = 0;
                     adaptor.client = null;

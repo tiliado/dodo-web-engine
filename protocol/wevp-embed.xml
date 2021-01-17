@@ -143,6 +143,10 @@
       <arg name="screen_x" type="fixed" summary="x coordinate relative to the screen top left corner"/>
       <arg name="screen_y" type="fixed" summary="y coordinate relative to the screen top left corner"/>
     </event>
+
+    <event name="released">
+      <description summary="Viev was released and can be deleted."></description>
+    </event>
     
   </interface>
 

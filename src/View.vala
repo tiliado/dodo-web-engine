@@ -51,6 +51,8 @@ public class View : Gtk.GLArea {
     private Surface? surface;
     private uint frames = 0;
     private bool crashed = false;
+    private uint tick_callback_id = 0;
+    private uint frames_per_second_callback_id = 0;
 
     public Gdk.RGBA background_color {
         get; set; default = Gdk.RGBA() {red = 0.1, green = 0.1, blue = 0.1, alpha = 1.0};
@@ -64,13 +66,20 @@ public class View : Gtk.GLArea {
 
     ~View() {
         if (this.surface != null) {
-            surface.state_committed.disconnect(on_surface_committed);
+            this.surface.state_committed.disconnect(on_surface_committed);
+            this.surface.set_gl_context(null);
+        }
+
+        if (tick_callback_id != 0) {
+            remove_tick_callback(tick_callback_id);
+            Source.remove(frames_per_second_callback_id);
         }
     }
 
-    public void set_surface(Surface surface) {
+    public void set_surface(Surface? surface) {
         if (this.surface != null) {
-            surface.state_committed.disconnect(on_surface_committed);
+            this.surface.state_committed.disconnect(on_surface_committed);
+            this.surface.set_gl_context(null);
         }
 
         this.surface = surface;
@@ -81,18 +90,32 @@ public class View : Gtk.GLArea {
             }
 
             surface.state_committed.connect(on_surface_committed);
-            add_tick_callback(() => {
-                if (surface != null) {
-                    surface.queue_render_frame();
-                }
-                return Source.CONTINUE;
-            });
-            Timeout.add(1000, () => {
-                frames_per_second = frames;
-                frames = 0;
-                return Source.CONTINUE;
-            });
+
+            if (tick_callback_id == 0) {
+                tick_callback_id = add_tick_callback(tick_callback);
+                frames_per_second = frames = 0;
+                frames_per_second_callback_id = Timeout.add(1000, frames_per_second_callback);
+            }
+        } else if (tick_callback_id != 0) {
+            remove_tick_callback(tick_callback_id);
+            tick_callback_id = 0;
+            Source.remove(frames_per_second_callback_id);
+            frames_per_second_callback_id = 0;
+            frames_per_second = frames = 0;
         }
+    }
+
+    private bool frames_per_second_callback() {
+        frames_per_second = frames;
+        frames = 0;
+        return Source.CONTINUE;
+    }
+
+    private bool tick_callback() {
+        if (surface != null) {
+            surface.queue_render_frame();
+        }
+        return Source.CONTINUE;
     }
 
     public override bool render(Gdk.GLContext ctx) {

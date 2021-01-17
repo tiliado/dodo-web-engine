@@ -65,6 +65,7 @@ public class View: Wl.Resource {
     }
     [CCode(cname="wevp_view_send_crossing_event")]
     private void _send_crossing_event(uint type, Wl.Fixed local_x, Wl.Fixed local_y, Wl.Fixed window_x, Wl.Fixed window_y, Wl.Fixed screen_x, Wl.Fixed screen_y);
+    public void send_released();
 }
 
 public static Wl.Interface embedder_interface;

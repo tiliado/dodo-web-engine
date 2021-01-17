@@ -6,7 +6,7 @@ public class Adaptor : Gtk.EventBox {
         Adaptor.change_cursor
     };
     private unowned Display display;
-    public View widget;
+    public unowned View widget;
     public unowned Wl.Client? client;
     public unowned Wevp.View? view;
     public Surface? surface;
@@ -69,6 +69,11 @@ public class Adaptor : Gtk.EventBox {
         button_press_event.disconnect(on_button_event);
         widget.notify["scale-factor"].disconnect(on_scale_factor_changed);
         widget.size_allocate.disconnect(on_size_allocate);
+        widget.set_surface(null);
+
+        if (view != null) {
+            view.send_released();
+        }
     }
 
     public void check_state() {
