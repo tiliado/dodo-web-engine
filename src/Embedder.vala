@@ -43,8 +43,8 @@ public class Embedder : GLib.Object {
      *
      * You must hold the reference to adaptor it it will be destroyed.
      */
-    public Adaptor add_view(View widget) {
-        var adaptor = new Adaptor(display, widget);
+    public Adaptor add_view(Canvas canvas) {
+        var adaptor = new Adaptor(display, canvas);
         adaptor.weak_ref(on_adaptor_destroyed);
         adaptors.prepend(adaptor);
         if (client != null) {
@@ -59,10 +59,10 @@ public class Embedder : GLib.Object {
 
     private void request_view(Adaptor adaptor) {
         debug("Request view %s.", Utils.client_info(client));
-        unowned Gtk.Widget widget = adaptor.widget;
-        uint width = (uint) widget.get_allocated_width();
-        uint height = (uint) widget.get_allocated_height();
-        uint scale = (uint) widget.scale_factor;
+        unowned Canvas canvas = adaptor.canvas;
+        uint width = (uint) canvas.get_allocated_width();
+        uint height = (uint) canvas.get_allocated_height();
+        uint scale = (uint) canvas.scale_factor;
         debug("Window %u×%u factor %u.", width, height, scale);
         adaptor.serial = display.wl_display.next_serial();
         bound[client].send_view_requested(adaptor.serial, width, height, scale);
@@ -103,8 +103,8 @@ public class Embedder : GLib.Object {
         Adaptor? adaptor = null;
         
         if (serial == 0) {
-            var widget = new View();
-            adaptor = new Adaptor(self.display, widget);
+            var canvas = new Canvas();
+            adaptor = new Adaptor(self.display, canvas);
             adaptor.weak_ref(self.on_adaptor_destroyed);
             self.adaptors.prepend(adaptor);
             self.orphaned_view(adaptor);

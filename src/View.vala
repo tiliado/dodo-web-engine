@@ -37,7 +37,7 @@ void main()
 """;
 
 
-public class View : Gtk.GLArea {
+public class Canvas : Gtk.GLArea {
     private const int ICON_SIZE = 256;
     public uint frames_per_second {get; private set; default = 0;}
     private GLuint gl_program = 0;
@@ -58,13 +58,13 @@ public class View : Gtk.GLArea {
         get; set; default = Gdk.RGBA() {red = 0.1, green = 0.1, blue = 0.1, alpha = 1.0};
     }
 
-    public View() {
+    public Canvas() {
         realize.connect(on_realize);
         unrealize.connect(on_unrealize);
         set_auto_render(true);
     }
 
-    ~View() {
+    ~Canvas() {
         if (this.surface != null) {
             this.surface.state_committed.disconnect(on_surface_committed);
             this.surface.set_gl_context(null);

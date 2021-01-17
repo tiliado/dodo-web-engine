@@ -6,7 +6,7 @@ public class Adaptor : Gtk.EventBox {
         Adaptor.change_cursor
     };
     private unowned Display display;
-    public unowned View widget;
+    public unowned Canvas canvas;
     public unowned Wl.Client? client;
     public unowned Wevp.View? view;
     public Surface? surface;
@@ -18,12 +18,12 @@ public class Adaptor : Gtk.EventBox {
     private Gtk.IMContextSimple im_context;
     private string? im_string = null;
 
-    public Adaptor(Display display, View widget) {
+    public Adaptor(Display display, Canvas canvas) {
         this.display = display;
-        this.widget = widget;
+        this.canvas = canvas;
         this.im_context = new Gtk.IMContextSimple();
-        widget.show();
-        add(widget);
+        canvas.show();
+        add(canvas);
         above_child = true;
         visible_window = false;;
         can_focus = true;
@@ -40,8 +40,8 @@ public class Adaptor : Gtk.EventBox {
             | Gdk.EventMask.ENTER_NOTIFY_MASK 
             | Gdk.EventMask.VISIBILITY_NOTIFY_MASK
         );
-        widget.size_allocate.connect_after(on_size_allocate);
-        widget.notify["scale-factor"].connect_after(on_scale_factor_changed);
+        canvas.size_allocate.connect_after(on_size_allocate);
+        canvas.notify["scale-factor"].connect_after(on_scale_factor_changed);
         button_press_event.connect(on_button_event);
         button_release_event.connect(on_button_event);
         motion_notify_event.connect(on_motion_notify_event);
@@ -67,9 +67,9 @@ public class Adaptor : Gtk.EventBox {
         motion_notify_event.disconnect(on_motion_notify_event);
         button_release_event.disconnect(on_button_event);
         button_press_event.disconnect(on_button_event);
-        widget.notify["scale-factor"].disconnect(on_scale_factor_changed);
-        widget.size_allocate.disconnect(on_size_allocate);
-        widget.set_surface(null);
+        canvas.notify["scale-factor"].disconnect(on_scale_factor_changed);
+        canvas.size_allocate.disconnect(on_size_allocate);
+        canvas.set_surface(null);
 
         if (view != null) {
             view.send_released();
@@ -81,9 +81,9 @@ public class Adaptor : Gtk.EventBox {
             return;
         }
 
-        uint width = (uint) widget.get_allocated_width();
-        uint height = (uint) widget.get_allocated_height();
-        uint scale = (uint) widget.scale_factor;
+        uint width = (uint) canvas.get_allocated_width();
+        uint height = (uint) canvas.get_allocated_height();
+        uint scale = (uint) canvas.scale_factor;
         if (this.width != width || this.height != height) {
             this.width = width;
             this.height = height;
@@ -102,7 +102,7 @@ public class Adaptor : Gtk.EventBox {
         this.view = view;
         this.surface = surface;
         view.set_implementation(&Adaptor.impl, this, null);
-        widget.set_surface(surface);
+        canvas.set_surface(surface);
         view.send_focus_event(has_focus ? Wevp.EventType.FOCUS_IN : Wevp.EventType.FOCUS_OUT);
     }
 
