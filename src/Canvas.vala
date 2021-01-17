@@ -39,32 +39,48 @@ void main()
 
 public class Canvas : Gtk.GLArea {
     private const int ICON_SIZE = 256;
+    private static Wevp.ViewInterface impl = {
+        Canvas.change_cursor
+    };
     public uint frames_per_second {get; private set; default = 0;}
+    public uint serial;
+    public uint width;
+    public uint height;
+    public uint scale;
+    private uint resize_timeout_id = 0;
+    private unowned Display display;
+    public unowned Wl.Client? client;
+    public unowned Wevp.View? view;
     private GLuint gl_program = 0;
     private GLuint gl_element_buffer = 0;
     private GLuint gl_vertex_buffer = 0;
     private GLuint gl_vertex_array = 0;
     private GLuint gl_texture_loading_icon = 0;
     private GLuint gl_texture_crashed_icon = 0;
-    private int width = 0;
-    private int height = 0;
-    private Surface? surface;
+    public Surface? surface;
     private uint frames = 0;
     private bool crashed = false;
     private uint tick_callback_id = 0;
     private uint frames_per_second_callback_id = 0;
+    private bool last_focus_event = false;
 
     public Gdk.RGBA background_color {
         get; set; default = Gdk.RGBA() {red = 0.1, green = 0.1, blue = 0.1, alpha = 1.0};
     }
 
-    public Canvas() {
+    public Canvas(Display display) {
+        this.display = display;
         realize.connect(on_realize);
         unrealize.connect(on_unrealize);
+        size_allocate.connect_after(on_size_allocate);
+        notify["scale-factor"].connect_after(on_scale_factor_changed);
         set_auto_render(true);
     }
 
     ~Canvas() {
+        notify["scale-factor"].disconnect(on_scale_factor_changed);
+        size_allocate.disconnect(on_size_allocate);
+        
         if (this.surface != null) {
             this.surface.state_committed.disconnect(on_surface_committed);
             this.surface.set_gl_context(null);
@@ -74,6 +90,22 @@ public class Canvas : Gtk.GLArea {
             remove_tick_callback(tick_callback_id);
             Source.remove(frames_per_second_callback_id);
         }
+
+        if (view != null) {
+            view.send_released();
+        }
+    }
+
+    public signal void cursor_changed(string? name);
+
+    public void attach_view(Wl.Client? client, Wevp.View view, Surface surface) {
+        this.serial = 0;
+        this.client = client;
+        this.view = view;
+        this.surface = surface;
+        view.set_implementation(&Canvas.impl, this, null);
+        set_surface(surface);
+        view.send_focus_event(last_focus_event ? Wevp.EventType.FOCUS_IN : Wevp.EventType.FOCUS_OUT);
     }
 
     public void set_surface(Surface? surface) {
@@ -105,6 +137,89 @@ public class Canvas : Gtk.GLArea {
         }
     }
 
+    public void update_state() {
+        if (view == null) {
+            return;
+        }
+
+        uint width = (uint) get_allocated_width();
+        uint height = (uint) get_allocated_height();
+        uint scale = (uint) scale_factor;
+        if (this.width != width || this.height != height) {
+            this.width = width;
+            this.height = height;
+            view.send_resized(width, height);
+        }
+        if (this.scale != scale) {
+            this.scale = scale;
+            view.send_rescaled(scale);
+        }
+        display.dispatch();
+    }
+
+    public bool send_key_event(Wevp.EventType type, string name, uint modifiers, uint keyval, uint keycode, uint native_modifiers, string? text) {
+        if (view != null) {
+            view.send_key_event(type, name, modifiers, keyval, keycode, native_modifiers, text);
+            return true;
+        }
+        return false;
+    }
+    
+    public bool send_focus_event(bool has_focus) {
+        last_focus_event = has_focus;
+        
+        if (view != null) {
+            view.send_focus_event(has_focus ? Wevp.EventType.FOCUS_IN : Wevp.EventType.FOCUS_OUT);
+            return true;
+        }
+        return false;
+    }
+
+    public bool send_mouse_event(Wevp.EventType type, Wevp.MouseButton mouse, uint modifiers, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
+        if (view != null) {
+            view.send_mouse_event(type, mouse, modifiers, local_x, local_y, window_x, window_y, screen_x, screen_y);
+            return true;
+        }
+        return false;
+    }
+
+    public bool send_scroll_event(Wevp.EventType type, uint modifiers, double delta_x, double delta_y, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
+        if (view != null) {
+            view.send_scroll_event(type, modifiers, delta_x, delta_y, local_x, local_y, window_x, window_y, screen_x, screen_y);
+            return true;
+        }
+        return false;
+        
+    }
+
+    public bool send_crossing_event(Wevp.EventType type, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
+        if (view != null) {
+            view.send_crossing_event(type, local_x, local_y, window_x, window_y, screen_x, screen_y);
+            return true;
+        }
+        return false;
+    }
+
+    private static void change_cursor(Wl.Client client, Wevp.View wl_view, string? name) {
+        unowned Canvas? self = (Canvas) wl_view.get_user_data();
+        self.cursor_changed(name);
+    }
+
+    private void on_size_allocate(Gtk.Allocation alloc) {
+        if (resize_timeout_id != 0) {
+            Source.remove(resize_timeout_id);
+        }
+        resize_timeout_id = Timeout.add(1, () => {
+            resize_timeout_id = 0;
+            update_state();
+            return false;
+        });
+    }
+
+    private void on_scale_factor_changed(GLib.Object o, ParamSpec p) {
+        update_state();
+    }
+
     private bool frames_per_second_callback() {
         frames_per_second = frames;
         frames = 0;
@@ -128,12 +243,6 @@ public class Canvas : Gtk.GLArea {
             draw_texture(0, 0, 0);
         }
         return true; // true = stop, false = continue
-    }
-
-    public override void resize(int width, int height) {
-        debug("Resize: %d×%d", width, height);
-        this.width = width;
-        this.height = height;
     }
 
     private void on_realize() {
@@ -332,6 +441,9 @@ public class Canvas : Gtk.GLArea {
     }
 
     private void draw_texture(GLuint texture_id, int width, int height) {
+        int alloc_width = get_allocated_width();
+        int alloc_height = get_allocated_height();
+        
         glClearColor(
             (GLfloat) background_color.red,
             (GLfloat) background_color.green,
@@ -346,15 +458,15 @@ public class Canvas : Gtk.GLArea {
             height = ICON_SIZE;
         } else {
             if (width <= 0) {
-                width = this.width;
+                width = alloc_width;
             }
             if (height <= 0) {
-                height = this.height;
+                height = alloc_height;
             }
         }
 
         // Center viewport
-        glViewport((this.width - width) / 2, (this.height - height) / 2, width, height);
+        glViewport((alloc_width - width) / 2, (alloc_height - height) / 2, width, height);
 
         if (texture_id != 0) {
             glEnable(GL_BLEND);

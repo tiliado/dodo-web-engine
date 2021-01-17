@@ -31,14 +31,15 @@ void main(string[] args) {
         return false;
     });
 
-    display.embedder.orphaned_view.connect((view) => {
+    display.embedder.unclaimed_canvas.connect((canvas) => {
         var w = new Gtk.Window();
         w.title = "Wayland Embedded View Framework";
-        w.add(view);
+        w.add(new View(canvas));
         w.show_all();
     });
 
-    var view = display.embedder.add_canvas(new Canvas());
+    var canvas = display.embedder.create_canvas();
+    var view = new View(canvas);
     view.show();
     window.add(view);
 

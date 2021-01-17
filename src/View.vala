@@ -1,25 +1,11 @@
 namespace Wevf {
 
 public class View : Gtk.EventBox {
-    
-    private static Wevp.ViewInterface impl = {
-        View.change_cursor
-    };
-    private unowned Display display;
     public unowned Canvas canvas;
-    public unowned Wl.Client? client;
-    public unowned Wevp.View? view;
-    public Surface? surface;
-    public uint serial;
-    public uint width;
-    public uint height;
-    public uint scale;
-    private uint resize_timeout_id = 0;
     private Gtk.IMContextSimple im_context;
     private string? im_string = null;
 
-    public View(Display display, Canvas canvas) {
-        this.display = display;
+    public View(Canvas canvas) {
         this.canvas = canvas;
         this.im_context = new Gtk.IMContextSimple();
         canvas.show();
@@ -40,8 +26,6 @@ public class View : Gtk.EventBox {
             | Gdk.EventMask.ENTER_NOTIFY_MASK 
             | Gdk.EventMask.VISIBILITY_NOTIFY_MASK
         );
-        canvas.size_allocate.connect_after(on_size_allocate);
-        canvas.notify["scale-factor"].connect_after(on_scale_factor_changed);
         button_press_event.connect(on_button_event);
         button_release_event.connect(on_button_event);
         motion_notify_event.connect(on_motion_notify_event);
@@ -53,9 +37,12 @@ public class View : Gtk.EventBox {
         enter_notify_event.connect(on_crossing_event);
         leave_notify_event.connect(on_crossing_event);
         realize.connect_after(on_realize);
+        canvas.cursor_changed.connect(on_cursor_changed);
+        canvas.send_focus_event(has_focus);
     }
 
     ~View() {
+        canvas.cursor_changed.disconnect(on_cursor_changed);
         realize.disconnect(on_realize);
         enter_notify_event.disconnect(on_crossing_event);
         leave_notify_event.disconnect(on_crossing_event);
@@ -67,63 +54,13 @@ public class View : Gtk.EventBox {
         motion_notify_event.disconnect(on_motion_notify_event);
         button_release_event.disconnect(on_button_event);
         button_press_event.disconnect(on_button_event);
-        canvas.notify["scale-factor"].disconnect(on_scale_factor_changed);
-        canvas.size_allocate.disconnect(on_size_allocate);
         canvas.set_surface(null);
-
-        if (view != null) {
-            view.send_released();
-        }
     }
-
-    public void check_state() {
-        if (view == null) {
-            return;
-        }
-
-        uint width = (uint) canvas.get_allocated_width();
-        uint height = (uint) canvas.get_allocated_height();
-        uint scale = (uint) canvas.scale_factor;
-        if (this.width != width || this.height != height) {
-            this.width = width;
-            this.height = height;
-            view.send_resized(width, height);
-        }
-        if (this.scale != scale) {
-            this.scale = scale;
-            view.send_rescaled(scale);
-        }
-        display.dispatch();
-    }
-
-    public void attach_view(Wl.Client? client, Wevp.View view, Surface surface) {
-        this.serial = 0;
-        this.client = client;
-        this.view = view;
-        this.surface = surface;
-        view.set_implementation(&View.impl, this, null);
-        canvas.set_surface(surface);
-        view.send_focus_event(has_focus ? Wevp.EventType.FOCUS_IN : Wevp.EventType.FOCUS_OUT);
-    }
-
-    private void on_size_allocate(Gtk.Allocation alloc) {
-        if (resize_timeout_id != 0) {
-            Source.remove(resize_timeout_id);
-        }
-        resize_timeout_id = Timeout.add(10, () => {
-            resize_timeout_id = 0;
-            check_state();
-            return false;
-        });
-    }
-
-    private void on_scale_factor_changed(GLib.Object o, ParamSpec p) {
-        check_state();
-    }
+    
 
     private bool on_key_event(Gdk.EventKey event) {
         string? str = ((unichar) Gdk.keyval_to_unicode(event.keyval)).to_string();
-        debug("%s(%s:%s:%s): %u, %u, %u", event.type.to_string(), Gdk.keyval_name(event.keyval), event.str, str, event.keyval, event.hardware_keycode, (uint) event.group);
+        
         if (im_context.filter_keypress(event)) {
             if (im_string != null) {
                 str = (owned) im_string;
@@ -143,10 +80,8 @@ public class View : Gtk.EventBox {
         default:
             return false;
         }
-        debug("%s(%s:%s:%s): %u, %u, %u", type.to_string(), Gdk.keyval_name(event.keyval), event.str, str, event.keyval, event.hardware_keycode, (uint) event.group);
-        if (view != null) {
-            view.send_key_event(type, Gdk.keyval_name(event.keyval), Keyboard.serialize_modifiers(event.state), event.keyval, event.hardware_keycode, (uint) event.state, str);
-        }
+        
+        canvas.send_key_event(type, Gdk.keyval_name(event.keyval), Keyboard.serialize_modifiers(event.state), event.keyval, event.hardware_keycode, (uint) event.state, str);
         return false;
     }
 
@@ -166,37 +101,26 @@ public class View : Gtk.EventBox {
             return false;
         }
         grab_focus();
-        send_mouse_event(type, event.button, event.state, event.x, event.y, event.x_root, event.y_root);
+        canvas.send_mouse_event(type, (Wevp.MouseButton) event.button, Keyboard.serialize_modifiers(event.state), event.x, event.y, event.x, event.y, event.x_root, event.y_root);
         return false;
     }
 
     private bool on_focus_event(Gdk.EventFocus event) {
-        Wevp.EventType type = event.@in == 0 ? Wevp.EventType.FOCUS_OUT : Wevp.EventType.FOCUS_IN;
-        if (type == Wevp.EventType.FOCUS_IN) {
+        bool has_focus = event.@in != 0;
+        if (has_focus) {
             grab_focus();
             im_context.focus_in();
         } else {
             im_context.focus_out();
         }
-        debug("%s", type.to_string());
-        if (view != null) {
-            view.send_focus_event(type);
-        }
+        
+        canvas.send_focus_event(has_focus);
         return false;
     }
 
     private bool on_motion_notify_event(Gdk.EventMotion event) {
-        send_mouse_event(Wevp.EventType.MOUSE_MOVE, 0, event.state, event.x, event.y, event.x_root, event.y_root);
+        canvas.send_mouse_event(Wevp.EventType.MOUSE_MOVE, (Wevp.MouseButton) 0, Keyboard.serialize_modifiers(event.state), event.x, event.y, event.x, event.y, event.x_root, event.y_root);
         return false;
-    }
-
-    private void send_mouse_event(Wevp.EventType type, uint button, Gdk.ModifierType state, double x, double y, double x_root, double y_root) {
-        if (type != Wevp.EventType.MOUSE_MOVE) {
-            debug("%s(%u): [%f, %f] [%f, %f]", type.to_string(), button, x, y, x_root, y_root);
-        }
-        if (view != null) {
-            view.send_mouse_event(type, (Wevp.MouseButton) button, Keyboard.serialize_modifiers(state), x, y, x, y, x_root, y_root);
-        }
     }
 
     private bool on_scroll_event(Gdk.EventScroll event) {
@@ -217,13 +141,8 @@ public class View : Gtk.EventBox {
         default:
             return false;
         }
-        debug("%s: [%f, %f] [%f, %f] [%f, %f]", type.to_string(), event.delta_x, event.delta_y, event.x, event.y, event.x_root, event.y_root);
-        if (view != null) {
-            view.send_scroll_event(type, Keyboard.serialize_modifiers(event.state), event.delta_x, event.delta_y, event.x, event.y, event.x, event.y, event.x_root, event.y_root);
-            return true;
-        }
-        return false;
-        
+
+        return canvas.send_scroll_event(type, Keyboard.serialize_modifiers(event.state), event.delta_x, event.delta_y, event.x, event.y, event.x, event.y, event.x_root, event.y_root);
     }
 
     private bool on_crossing_event(Gdk.EventCrossing event) {
@@ -238,9 +157,8 @@ public class View : Gtk.EventBox {
         default:
             return false;
         }
-        if (view != null) {
-            view.send_crossing_event(type, event.x, event.y, event.x, event.y, event.x_root, event.y_root);
-        }
+        
+        canvas.send_crossing_event(type, event.x, event.y, event.x, event.y, event.x_root, event.y_root);
         return true;
     }
 
@@ -250,10 +168,9 @@ public class View : Gtk.EventBox {
         return Gdk.EVENT_STOP;
     }
 
-    private static void change_cursor(Wl.Client client, Wevp.View wl_view, string? name) {
-        unowned View? self = (View) wl_view.get_user_data();
-        var display = self.get_window().get_display();
-        self.get_window().set_cursor(new Gdk.Cursor.from_name(display, name));
+    private void on_cursor_changed(string? name) {
+        var display = get_window().get_display();
+        get_window().set_cursor(new Gdk.Cursor.from_name(display, name));
     }
 
     private void on_realize() {

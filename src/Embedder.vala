@@ -9,7 +9,7 @@ public class Embedder : GLib.Object {
     public Wl.Global glob;
     private unowned Display display;
     private HashTable<unowned Wl.Client, unowned Wevp.Embedder> bound;
-    private List<unowned View> views;
+    private List<unowned Canvas> canvas_requests;
     private unowned Wl.Client? client;
     private Compositor compositor;
 
@@ -32,40 +32,39 @@ public class Embedder : GLib.Object {
     public signal void destroyed();
 
     /**
-     * Emitted when an orphaned view is available.
+     * Emitted when an orphaned canvas is available.
      *
-     * You must hold the reference to view it it will be destroyed.
+     * You must hold the reference to canvas it it will be destroyed.
      */
-    public signal void orphaned_view(View view);
+    public signal void unclaimed_canvas(Canvas canvas);
 
     /**
      * Add a new canvas for rendering.
      *
-     * You must hold the reference to view it it will be destroyed.
+     * You must hold the reference to canvas it it will be destroyed.
      */
-    public View add_canvas(Canvas canvas) {
-        var view = new View(display, canvas);
-        view.weak_ref(on_adaptor_destroyed);
-        views.prepend(view);
+    public Canvas create_canvas() {
+        var canvas = new Canvas(display);
+        canvas.weak_ref(on_canvas_destroyed);
+        canvas_requests.prepend(canvas);
         if (client != null) {
-            request_view(view);
+            request_canvas(canvas);
         }
-        return view;
+        return canvas;
     }
 
-    private void on_adaptor_destroyed(GLib.Object object) {
-        views.remove((View) object);
+    private void on_canvas_destroyed(GLib.Object object) {
+        canvas_requests.remove((Canvas) object);
     }
 
-    private void request_view(View view) {
-        debug("Request view %s.", Utils.client_info(client));
-        unowned Canvas canvas = view.canvas;
+    private void request_canvas(Canvas canvas) {
+        debug("Request canvas %s.", Utils.client_info(client));
         uint width = (uint) canvas.get_allocated_width();
         uint height = (uint) canvas.get_allocated_height();
         uint scale = (uint) canvas.scale_factor;
         debug("Window %u×%u factor %u.", width, height, scale);
-        view.serial = display.wl_display.next_serial();
-        bound[client].send_view_requested(view.serial, width, height, scale);
+        canvas.serial = display.wl_display.next_serial();
+        bound[client].send_view_requested(canvas.serial, width, height, scale);
     }
 
     private static void bind(Wl.Client client, void *data, uint version, uint id) {
@@ -82,9 +81,9 @@ public class Embedder : GLib.Object {
 
         if (self.client == null) {
             self.client = client;
-            foreach (unowned View view in self.views) {
-                if (view.client == null) {
-                    self.request_view(view);
+            foreach (unowned Canvas canvas in self.canvas_requests) {
+                if (canvas.client == null) {
+                    self.request_canvas(canvas);
                 }
             }
         }
@@ -98,36 +97,38 @@ public class Embedder : GLib.Object {
         Wl.Client client, Wevp.Embedder wl_embedder, uint serial, uint view_id,
         Wl.Surface surface, uint width, uint height, uint scale
     ) {
-        debug("%s: New view serial=%u id=%u", Utils.client_info(client), serial, view_id);
+        debug("%s: New canvas serial=%u id=%u", Utils.client_info(client), serial, view_id);
         unowned Embedder self = (Embedder) wl_embedder.get_user_data();
-        View? view = null;
+        Canvas? canvas = null;
         
         if (serial == 0) {
-            var canvas = new Canvas();
-            view = new View(self.display, canvas);
-            view.weak_ref(self.on_adaptor_destroyed);
-            self.views.prepend(view);
-            self.orphaned_view(view);
+            canvas = new Canvas(self.display);
         } else {
-            foreach (unowned View candidate in self.views) {
+            foreach (unowned Canvas candidate in self.canvas_requests) {
                 if (candidate.serial == serial) {
                     debug("Found serial %u", serial);
-                    view = candidate;
+                    canvas = candidate;
+                    self.canvas_requests.remove(candidate);
                     break;
                 }
             }
+            if (canvas == null) {
+                warning("Serial not found: %u.", serial);
+                client.post_implementation_error("Wrong canvas serial: %u.", serial);
+                return;
+            }
         }
 
-        if (view == null) {
-            warning("Serial not found: %u.", serial);
-            client.post_implementation_error("Wrong view serial: %u.", serial);
-        } else {
-            unowned Wevp.View wl_view = Wevp.View.create(client, ref Wevp.view_interface, VERSION, view_id);
-            view.attach_view(client, wl_view, self.compositor.get_surface(surface.get_id()));
-            view.width = width;
-            view.height = height;
-            view.scale = scale;
-            view.check_state();
+         
+        unowned Wevp.View wl_view = Wevp.View.create(client, ref Wevp.view_interface, VERSION, view_id);
+        canvas.attach_view(client, wl_view, self.compositor.get_surface(surface.get_id()));
+        canvas.width = width;
+        canvas.height = height;
+        canvas.scale = scale;
+        canvas.update_state();
+
+        if (serial == 0) {
+            self.unclaimed_canvas(canvas);
         }
     }
 
@@ -143,15 +144,14 @@ public class Embedder : GLib.Object {
                 }
             }
 
-            foreach (unowned View view in views) {
-                if (view.client == client) {
-                    view.serial = 0;
-                    view.client = null;
-                    view.view = null;
-                    view.surface = null;
+            foreach (unowned Canvas canvas in canvas_requests) {
+                if (canvas.client == client) {
+                    canvas.serial = 0;
+                    canvas.client = null;
+                    canvas.surface = null;
 
                     if (this.client != null) {
-                        request_view(view);
+                        request_canvas(canvas);
                     }
                 }
             }
