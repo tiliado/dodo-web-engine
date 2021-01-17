@@ -32,6 +32,8 @@ public class Embedder : GLib.Object {
 
     public signal void destroyed();
 
+    public signal void orphaned_view(Adaptor adaptor);
+
     public Adaptor add_view(View widget) {
         var adaptor = new Adaptor(display, widget);
         widgets[widget] = adaptor;
@@ -85,19 +87,35 @@ public class Embedder : GLib.Object {
     ) {
         debug("%s: New view serial=%u id=%u", Utils.client_info(client), serial, view_id);
         unowned Embedder self = (Embedder) wl_embedder.get_user_data();
-        List<unowned Adaptor> candidates =  self.widgets.get_values();
-        foreach (unowned Adaptor adaptor in candidates) {
-            if (adaptor.serial == serial) {
-                unowned Wevp.View view = Wevp.View.create(client, ref Wevp.view_interface, VERSION, view_id);
-                adaptor.attach_view(client, view, self.compositor.get_surface(surface.get_id()));
-                adaptor.width = width;
-                adaptor.height = height;
-                adaptor.scale = scale;
-                adaptor.check_state();
-                return;
+        Adaptor? adaptor = null;
+        
+        if (serial == 0) {
+            var widget = new View();
+            adaptor = new Adaptor(self.display, widget);
+            self.widgets[widget] = adaptor;
+            self.orphaned_view(adaptor);
+        } else {
+            List<unowned Adaptor> candidates =  self.widgets.get_values();
+            foreach (unowned Adaptor candidate in candidates) {
+                if (candidate.serial == serial) {
+                    debug("Found serial %u", serial);
+                    adaptor = candidate;
+                    break;
+                }
             }
         }
-        client.post_implementation_error("Wrong view serial: %u.", serial);
+
+        if (adaptor == null) {
+            warning("Serial not found: %u.", serial);
+            client.post_implementation_error("Wrong view serial: %u.", serial);
+        } else {
+            unowned Wevp.View view = Wevp.View.create(client, ref Wevp.view_interface, VERSION, view_id);
+            adaptor.attach_view(client, view, self.compositor.get_surface(surface.get_id()));
+            adaptor.width = width;
+            adaptor.height = height;
+            adaptor.scale = scale;
+            adaptor.check_state();
+        }
     }
 
     private void on_client_destroyed(Wl.Client client) {

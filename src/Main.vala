@@ -31,6 +31,13 @@ void main(string[] args) {
         return false;
     });
 
+    display.embedder.orphaned_view.connect((view) => {
+        var w = new Gtk.Window();
+        w.title = "Wayland Embedded View Framework";
+        w.add(view);
+        w.show_all();
+    });
+
     var view = display.embedder.add_view(new View());
     view.show();
     window.add(view);
