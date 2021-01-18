@@ -1,8 +1,9 @@
 import mmap
 
 from OpenGL import GL
-from PySide2.QtCore import QUrl, QSize, QPointF, QPoint, Slot, QEvent
+from PySide2.QtCore import QUrl, QSize, QPointF, QPoint, Slot, QEvent, QObject
 from PySide2.QtGui import Qt, QMouseEvent, QKeyEvent, QWheelEvent, QCursor, QFocusEvent, QEnterEvent
+from PySide2.QtQuick import QQuickItem
 from pywayland.utils import AnonymousFile
 
 from wevf.events import MOUSE_BUTTONS, EventType, MOUSE_EVENTS, deserialize_modifiers, KEY_EVENTS, get_qt_key, \
@@ -12,8 +13,9 @@ from wevf.renderers import QmlOffscreenRenderer
 from wl_protocols.wayland import WlShm
 
 
-class View:
-    def __init__(self, wl_display, gl_context, shm, qml_view: QUrl, view, surface, width, height, scale):
+class View(QObject):
+    def __init__(self, wl_display, gl_context, shm, rootItem: QQuickItem, view, surface, width, height, scale):
+        super().__init__()
         self.wl_display = wl_display
         self.gl_context = gl_context
         self.shm = shm
@@ -26,8 +28,10 @@ class View:
         self.buffer = None
         self.last_time = 0
 
+        rootItem.setProperty("canvas", self)
+
         self.controller = TextureFramebufferController()
-        self.renderer = QmlOffscreenRenderer(qml_view, self.controller)
+        self.renderer = QmlOffscreenRenderer(rootItem, self.controller)
         self.renderer.initialize(QSize(width, height), self.gl_context)
         self.renderer.cursor_changed.connect(self.on_cursor_changed)
         self.controller.texture_rendered.connect(self.on_texture_rendered)

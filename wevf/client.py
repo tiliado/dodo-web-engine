@@ -6,6 +6,7 @@ from PySide2.QtCore import QUrl, Slot, QSocketNotifier
 from PySide2.QtGui import QSurfaceFormat, QOpenGLContext, QOffscreenSurface
 from pywayland.client import Display
 
+from wevf.qml import Engine, Component
 from wevf.view import View
 from wl_protocols.wayland import WlShm, WlCompositor
 from wl_protocols.wevp_embed import WevpEmbedder
@@ -27,6 +28,10 @@ class Client:
         self.wl_embedder = None
         self.views = {}
         self.fd_notifier = None
+        self.engine = Engine()
+        self.component = Component(self.engine, qml_view)
+        self.component.load()
+        self.component.relatedCreated.connect(self.on_related_created)
 
         if gl_context is None:
             gl_context = QOpenGLContext()
@@ -99,11 +104,22 @@ class Client:
         embeder.pong(serial)
         self.wl_display.flush()
 
-    def on_view_requested(self, embedder, serial, width, height, scale):
-        print("Request new view", serial, width, height, scale)
+    def create_view(self, serial: int, width: int, height: int, scale: int, rootItem):
         surface = self.wl_compositor.create_surface()
-        view = embedder.create_view(serial, surface, width, height, scale)
-        self.views[view] = View(
-            self.wl_display, self.gl_context, self.wl_shm, self.qml_view, view, surface, width, height, scale
+        wl_view = self.wl_embedder.create_view(serial, surface, width, height, scale)
+        self.views[wl_view] = View(
+            self.wl_display, self.gl_context, self.wl_shm, rootItem, wl_view, surface, width, height, scale
         )
         self.wl_display.flush()
+
+    def on_view_requested(self, embedder, serial, width, height, scale):
+        print("Request new view", serial, width, height, scale)
+        item = self.component.create()
+        item.setProperty("url", "https://www.seznam.cz")
+        self.create_view(serial, width, height, scale, item)
+
+    @Slot()
+    def on_related_created(self, view, item):
+        self.create_view(0, view.width, view.height, view.scale, item)
+
+

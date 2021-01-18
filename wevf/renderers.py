@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import Optional, Tuple
 
-from PySide2.QtCore import QSize, QUrl, QTimer, QCoreApplication, Slot, QEvent, Signal, QObject
+from PySide2.QtCore import QSize, QTimer, QCoreApplication, Slot, QEvent, Signal, QObject
 from PySide2.QtGui import QOpenGLFramebufferObject, QOpenGLContext, QOffscreenSurface, QCursor
-from PySide2.QtQml import QQmlComponent, QQmlEngine
+from PySide2.QtQml import QQmlComponent
 from PySide2.QtQuick import QQuickItem, QQuickRenderControl, QQuickWindow
 
 from wevf.events import get_cursor_name
@@ -16,7 +16,7 @@ class QmlOffscreenRenderer(QObject):
     Offscreen rendering of a QML component.
 
     Args:
-        qmlUrl: The URL of a QML component to render.
+        rootItem: The root  item of a QML component to render.
         controller: The controller of a framebuffer life cycle.
     """
 
@@ -29,19 +29,18 @@ class QmlOffscreenRenderer(QObject):
     _surface: QOffscreenSurface = None
     _control: QQuickRenderControl = None
     _window: QQuickWindow = None
-    _engine: QQmlEngine = None
     _renderTimer: QTimer = None
     _syncTimer: Optional[QTimer] = None
     _controller: FramebufferController
     _framebuffers: Optional[Tuple[Framebuffer, Framebuffer]] = None
     _component: QQmlComponent = None
-    _rootItem: QQuickItem = None
+    rootItem: QQuickItem = None
     _cursor: QCursor = None
 
-    def __init__(self, qmlUrl: QUrl, controller: FramebufferController):
+    def __init__(self, rootItem: QQuickItem, controller: FramebufferController):
         super().__init__()
-        self.qmlUrl = qmlUrl
         self._controller = controller
+        self.rootItem = rootItem
 
     def initialize(self, size: QSize, shareContext: QOpenGLContext) -> None:
         """
@@ -76,9 +75,6 @@ class QmlOffscreenRenderer(QObject):
         self._control = control = QQuickRenderControl()
         self._window = window = QQuickWindow(control)
         self._cursor = self._window.cursor()
-        self._engine = engine = QQmlEngine()
-        if not engine.incubationController():
-            engine.setIncubationController(window.incubationController())
 
         # Don't polish/sync/render immediately for better performance, use a timer
         self._renderTimer = renderTimer = QTimer()
@@ -102,12 +98,12 @@ class QmlOffscreenRenderer(QObject):
 
         self.initialized = True
 
-        # Load QML component
-        self._component = component = QQmlComponent(self._engine, self.qmlUrl)
-        if component.isLoading():
-            component.statusChanged.connect(self._onComponentStatusChanged)
-        else:
-            self._attachRootItem()
+        # Attach root item
+        self.rootItem.setParentItem(self._window.contentItem())
+        self._window.contentItem().forceActiveFocus()
+        self._updateSizes()
+        self.ctx.makeCurrent()
+        self._control.initialize(self.ctx.glContext)
 
     def resize(self, size: QSize) -> None:
         """
@@ -122,7 +118,7 @@ class QmlOffscreenRenderer(QObject):
 
         self.size = size
 
-        if self._rootItem and self.ctx.makeCurrent():
+        if self.rootItem and self.ctx.makeCurrent():
             self._destroyFrameBuffer()
             self._createFrameBuffer()
             self._updateSizes()
@@ -139,31 +135,6 @@ class QmlOffscreenRenderer(QObject):
         if cursor != self._cursor:
             self.cursor_changed.emit(cursor, get_cursor_name(cursor.shape()))
             self._cursor = cursor
-
-    def _attachRootItem(self):
-        """Attach root QML item to Quick window."""
-        component = self._component
-
-        if component.isError():
-            for err in component.errors():
-                print("Error:", err.url(), err.line(), err)
-            return
-
-        rootObject = component.create()
-        if component.isError():
-            for err in component.errors():
-                print("Error:", err.url(), err.line(), err)
-            return
-
-        if not isinstance(rootObject, QQuickItem):
-            raise TypeError(f'Unexpected QML type {type(rootObject)}.')
-
-        self._rootItem = rootObject
-        rootObject.setParentItem(self._window.contentItem())
-        self._window.contentItem().forceActiveFocus()
-        self._updateSizes()
-        self.ctx.makeCurrent()
-        self._control.initialize(self.ctx.glContext)
 
     def _createFrameBuffer(self):
         """Create framebuffer for quick window."""
@@ -188,8 +159,8 @@ class QmlOffscreenRenderer(QObject):
         print(f'QmlOffscreenRenderer._updateSizes: {self.size}')
         width, height = self.size.toTuple()
         self._window.setGeometry(0, 0, width, height)
-        self._rootItem.setWidth(width)
-        self._rootItem.setHeight(height)
+        self.rootItem.setWidth(width)
+        self.rootItem.setHeight(height)
 
     def _polishSyncRender(self):
         """Polish, sync & render."""
