@@ -125,11 +125,14 @@ public class Embedder : GLib.Object {
         canvas.width = width;
         canvas.height = height;
         canvas.scale = scale;
-        canvas.update_state();
 
         if (serial == 0) {
+            canvas.set_size_request((int) width, (int) height);
             self.unclaimed_canvas(canvas);
+            canvas.set_size_request(-1, -1);
         }
+
+        canvas.update_state();
     }
 
     private void on_client_destroyed(Wl.Client client) {
