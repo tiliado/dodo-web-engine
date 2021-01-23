@@ -6,9 +6,9 @@ from PySide2.QtGui import QOpenGLFramebufferObject, QOpenGLContext, QOffscreenSu
 from PySide2.QtQml import QQmlComponent
 from PySide2.QtQuick import QQuickItem, QQuickRenderControl, QQuickWindow
 
-from wevf.events import get_cursor_name
-from wevf.framebuffers import FramebufferController, Framebuffer
-from wevf.gl import RenderContext, get_default_format
+from dodo.events import get_cursor_name
+from dodo.framebuffers import FramebufferController, Framebuffer
+from dodo.gl import RenderContext, get_default_format
 
 
 class QmlOffscreenRenderer(QObject):

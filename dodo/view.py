@@ -6,10 +6,10 @@ from PySide2.QtGui import Qt, QMouseEvent, QKeyEvent, QWheelEvent, QCursor, QFoc
 from PySide2.QtQuick import QQuickItem
 from pywayland.utils import AnonymousFile
 
-from wevf.events import MOUSE_BUTTONS, EventType, MOUSE_EVENTS, deserialize_modifiers, KEY_EVENTS, get_qt_key, \
+from dodo.events import MOUSE_BUTTONS, EventType, MOUSE_EVENTS, deserialize_modifiers, KEY_EVENTS, get_qt_key, \
     WHEEL_ANGLES, FOCUS_EVENTS
-from wevf.framebuffers import TextureFramebufferController, Framebuffer
-from wevf.renderers import QmlOffscreenRenderer
+from dodo.framebuffers import TextureFramebufferController, Framebuffer
+from dodo.renderers import QmlOffscreenRenderer
 from wl_protocols.wayland import WlShm
 
 

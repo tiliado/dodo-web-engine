@@ -28,7 +28,7 @@ run-server: all
 	G_MESSAGES_DEBUG=all build/wayland-embed
 
 run-client: all
-	PYTHONPATH=build:. python3 wevf/qtwebengine.py $(ARGS)
+	PYTHONPATH=build:. python3 dodo/qtwebengine.py $(ARGS)
 	
 gdb: all
 	G_MESSAGES_DEBUG=all gdb -ex run --args build/wayland-embed

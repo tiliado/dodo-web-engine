@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from PySide2.QtCore import QSize, QObject, Signal
 
-from wevf.gl import RenderContext, GL
+from dodo.gl import RenderContext, GL
 
 
 class Framebuffer(ABC):

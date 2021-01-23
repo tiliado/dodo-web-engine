@@ -2,7 +2,7 @@ from PySide2.QtCore import QTimer, Slot, Signal, QObject, QUrl
 from PySide2.QtQml import QQmlComponent, QQmlIncubationController, QQmlEngine, qmlRegisterType
 from PySide2.QtQuick import QQuickItem
 
-from wevf.view import View
+from dodo.view import View
 
 
 class IncubationController(QQmlIncubationController):

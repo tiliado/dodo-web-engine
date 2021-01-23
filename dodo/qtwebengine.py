@@ -11,9 +11,9 @@ from PySide2.QtGui import QGuiApplication
 from PySide2.QtWebEngine import QtWebEngine
 from PySide2.QtWidgets import QApplication
 
-from wevf.client import Client
-from wevf.gl import initialize_gl
-from wevf.utils import get_data_path
+from dodo.client import Client
+from dodo.gl import initialize_gl
+from dodo.utils import get_data_path
 
 WAYLAND_DISPLAY = os.environ.get("DODO_DISPLAY", "dodo/default")
 

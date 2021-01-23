@@ -13,7 +13,7 @@ Components
 
 * The `dodo` protocol: [protocols/dodo-protocol.xml](./protocol/dodo-protocol.xml)
 * Server implementation in Vala/GTK+ 3: [src/](./src)
-* Client implementation in Python: wevf
+* Client implementation in Python: [dodo/](./dodo)
 
 Dependencies
 ------------

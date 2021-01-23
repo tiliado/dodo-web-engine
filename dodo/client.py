@@ -6,8 +6,8 @@ from PySide2.QtCore import QUrl, Slot, QSocketNotifier
 from PySide2.QtGui import QSurfaceFormat, QOpenGLContext, QOffscreenSurface
 from pywayland.client import Display
 
-from wevf.qml import Engine, Component
-from wevf.view import View
+from dodo.qml import Engine, Component
+from dodo.view import View
 from wl_protocols.wayland import WlShm, WlCompositor
 from wl_protocols.dodo import DodoProtoEmbedder
 
