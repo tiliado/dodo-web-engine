@@ -115,7 +115,7 @@ class Client:
     def on_view_requested(self, embedder, serial, width, height, scale):
         print("Request new view", serial, width, height, scale)
         item = self.component.create()
-        item.setProperty("url", "https://www.seznam.cz")
+        item.setProperty("url", "https://bitmovin.com/demos/drm")
         self.create_view(serial, width, height, scale, item)
 
     @Slot()
