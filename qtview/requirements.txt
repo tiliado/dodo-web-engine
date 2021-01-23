@@ -1,0 +1,4 @@
+PyOpenGL
+PyOpenGL-accelerate
+PySide2
+pywayland
