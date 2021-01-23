@@ -9,7 +9,7 @@ from pywayland.client import Display
 from wevf.qml import Engine, Component
 from wevf.view import View
 from wl_protocols.wayland import WlShm, WlCompositor
-from wl_protocols.wevp_embed import WevpEmbedder
+from wl_protocols.dodo import DodoProtoEmbedder
 
 SHM_FORMAT = {
     WlShm.format.argb8888.value: "ARGB8888",
@@ -88,9 +88,9 @@ class Client:
             print("got shm")
             self.wl_shm = registry.bind(object_id, WlShm, version)
             self.wl_shm.dispatcher["format"] = self.on_shm_format
-        elif interface == "wevp_embedder":
+        elif interface == "dodo_proto_embedder":
             print("got embeder")
-            self.wl_embedder = registry.bind(object_id, WevpEmbedder, version)
+            self.wl_embedder = registry.bind(object_id, DodoProtoEmbedder, version)
             self.wl_embedder.dispatcher["ping"] = self.on_ping
             self.wl_embedder.dispatcher["view_requested"] = self.on_view_requested
 

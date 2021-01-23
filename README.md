@@ -1,5 +1,7 @@
-Wayland Embedded View Framework: Server
-=======================================
+Dodo Web Engine
+===============
+
+Embed QtWebEngine into an GTK 3 application.
 
 * Development status: 💩 prototype 💩
 * Maintainer: Jiří Janoušek
@@ -9,9 +11,9 @@ Wayland Embedded View Framework: Server
 Components
 ----------
 
-* The `wevp_embed` protocol: [protocols/wevp-embed.xml](./protocol/wevp-embed.xml)
+* The `dodo` protocol: [protocols/dodo-protocol.xml](./protocol/dodo-protocol.xml)
 * Server implementation in Vala/GTK+ 3: [src/](./src)
-* Client implementation in Python: FIXME
+* Client implementation in Python: wevf
 
 Dependencies
 ------------
@@ -30,13 +32,13 @@ Build from source
 Run
 ---
 
-`make run` - Starts a new server listening on `$XDG_RUNTIME_DIR/wevf-demo`.
+`make run-server` - Starts a new server listening on `$XDG_RUNTIME_DIR/dodo/default`.
 
 Copyright
 ---------
 
-* Copyright 2020 Jiří Janoušek <janousek.jiri@gmail.com>
+* Copyright 2020-2021 Jiří Janoušek <janousek.jiri@gmail.com>
 * License: [BSD-2-Clause](./LICENSE)
 
-[1]: https://github.com/tiliado/wayland-embedded-view-server/issues
-[2]: https://github.com/tiliado/wayland-embedded-view-server/issues/new
+[1]: https://github.com/tiliado/dodo-web-engine/issues
+[2]: https://github.com/tiliado/dodo-web-engine/issues/new

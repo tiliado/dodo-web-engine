@@ -1,4 +1,4 @@
-namespace Wevf {
+namespace Dodo {
 
 void main(string[] args) {
     Gtk.init(ref args);
@@ -6,12 +6,9 @@ void main(string[] args) {
     assert(wl_display != null);
     wl_display.init_shm();
 
-    unowned string? wayland_socket = Environment.get_variable("DEMO_DISPLAY");
+    unowned string? wayland_socket = Environment.get_variable("DODO_DISPLAY");
     if (wayland_socket == null) {
-        wayland_socket = Environment.get_variable("WAYLAND_DISPLAY");
-        if (wayland_socket == null) {
-            wayland_socket = "wevf-demo";
-        }
+        wayland_socket = "dodo/default";
     }
     wl_display.add_socket(wayland_socket);
 
@@ -47,4 +44,4 @@ void main(string[] args) {
 }
 
 
-} // namespace Wevf
+} // namespace Dodo

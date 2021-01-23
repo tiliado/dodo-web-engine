@@ -1,6 +1,6 @@
 using GL;
 
-namespace Wevf.Textures {
+namespace Dodo.Textures {
 
 public GLuint load_from_pixels(void* data, uint fmt, int width, int height, int stride) {
     // FIXME: fmt & stride
@@ -16,4 +16,4 @@ public GLuint load_from_pixels(void* data, uint fmt, int width, int height, int 
     return texture;
 }
 
-} // namespace Wevf.Textures
+} // namespace Dodo.Textures

@@ -1,4 +1,4 @@
-namespace Wevf.Keyboard {
+namespace Dodo.Keyboard {
 
 public static uint serialize_modifiers(Gdk.ModifierType modifiers) {
     uint val = 0;
@@ -17,4 +17,4 @@ public static uint serialize_modifiers(Gdk.ModifierType modifiers) {
     return val;
 }
 
-} // namespace Wevf.Keyboard
+} // namespace Dodo.Keyboard

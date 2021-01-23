@@ -1,14 +1,14 @@
-namespace Wevf {
+namespace Dodo {
 
 public class Embedder : GLib.Object {
     private const int VERSION = 1;
-    private static Wevp.EmbedderInterface impl = {
+    private static DodoProto.EmbedderInterface impl = {
         Embedder.pong,
         Embedder.create_view
     };
     public Wl.Global glob;
     private unowned Display display;
-    private HashTable<unowned Wl.Client, unowned Wevp.Embedder> bound;
+    private HashTable<unowned Wl.Client, unowned DodoProto.Embedder> bound;
     private List<unowned Canvas> canvas_requests;
     private unowned Wl.Client? client;
     private Compositor compositor;
@@ -17,8 +17,8 @@ public class Embedder : GLib.Object {
     public Embedder(Display display, Compositor compositor) {
         this.display = display;
         this.compositor = compositor;
-        bound = new HashTable<unowned Wl.Client, unowned Wevp.Embedder>(direct_hash, direct_equal);
-        glob = new Wl.Global(display.wl_display, ref Wevp.embedder_interface, VERSION, this, Embedder.bind);
+        bound = new HashTable<unowned Wl.Client, unowned DodoProto.Embedder>(direct_hash, direct_equal);
+        glob = new Wl.Global(display.wl_display, ref DodoProto.embedder_interface, VERSION, this, Embedder.bind);
         display.client_destroyed.connect(on_client_destroyed);
         Timeout.add_seconds(10, () => {send_ping(); return true;});
     }
@@ -75,7 +75,7 @@ public class Embedder : GLib.Object {
             return;
         }
 
-        unowned Wevp.Embedder wl_embedder = Wevp.Embedder.create(client, ref Wevp.embedder_interface, (int) version, id);
+        unowned DodoProto.Embedder wl_embedder = DodoProto.Embedder.create(client, ref DodoProto.embedder_interface, (int) version, id);
         wl_embedder.set_implementation(&Embedder.impl, self, null);
         self.bound[client] = wl_embedder;
 
@@ -89,12 +89,12 @@ public class Embedder : GLib.Object {
         }
     }
 
-    private static void pong(Wl.Client client, Wevp.Embedder wl_embedder, uint serial) {
+    private static void pong(Wl.Client client, DodoProto.Embedder wl_embedder, uint serial) {
         debug("%s: Pong serial=%u", Utils.client_info(client), serial);
     }
 
     private static void create_view(
-        Wl.Client client, Wevp.Embedder wl_embedder, uint serial, uint view_id,
+        Wl.Client client, DodoProto.Embedder wl_embedder, uint serial, uint view_id,
         Wl.Surface surface, uint width, uint height, uint scale
     ) {
         debug("%s: New canvas serial=%u id=%u", Utils.client_info(client), serial, view_id);
@@ -120,7 +120,7 @@ public class Embedder : GLib.Object {
         }
 
          
-        unowned Wevp.View wl_view = Wevp.View.create(client, ref Wevp.view_interface, VERSION, view_id);
+        unowned DodoProto.View wl_view = DodoProto.View.create(client, ref DodoProto.view_interface, VERSION, view_id);
         canvas.attach_view(client, wl_view, self.compositor.get_surface(surface.get_id()));
         canvas.width = width;
         canvas.height = height;
@@ -163,9 +163,9 @@ public class Embedder : GLib.Object {
 
     private void send_ping() {
         uint serial = display.wl_display.next_serial();
-        var iter = HashTableIter<unowned Wl.Client, unowned Wevp.Embedder>(bound);
+        var iter = HashTableIter<unowned Wl.Client, unowned DodoProto.Embedder>(bound);
         unowned Wl.Client client;
-        unowned Wevp.Embedder embedder;
+        unowned DodoProto.Embedder embedder;
         while (iter.next (out client, out embedder)) {
             debug("Ping for %s: %u.", Utils.client_info(client), serial);
             embedder.send_ping(serial);
@@ -174,4 +174,4 @@ public class Embedder : GLib.Object {
     }
 }
 
-} // namespace Wevf
+} // namespace Dodo

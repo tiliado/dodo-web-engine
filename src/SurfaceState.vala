@@ -1,4 +1,4 @@
-namespace Wevf {
+namespace Dodo {
 
 public class SurfaceState {
     public Rect damage;
@@ -139,4 +139,4 @@ public enum Update {
     FRAME;
 }
 
-} // namespace Wevf
+} // namespace Dodo

@@ -15,7 +15,7 @@ from wevf.client import Client
 from wevf.gl import initialize_gl
 from wevf.utils import get_data_path
 
-WAYLAND_DISPLAY = os.environ.get("DEMO_DISPLAY", os.environ.get("WAYLAND_DISPLAY", "wevf-demo"))
+WAYLAND_DISPLAY = os.environ.get("DODO_DISPLAY", "dodo/default")
 
 
 def run(argv: List[str]):

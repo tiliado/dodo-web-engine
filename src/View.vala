@@ -1,4 +1,4 @@
-namespace Wevf {
+namespace Dodo {
 
 public class View : Gtk.EventBox {
     public unowned Canvas canvas;
@@ -69,13 +69,13 @@ public class View : Gtk.EventBox {
             }
         }
         
-        Wevp.EventType type;
+        DodoProto.EventType type;
         switch (event.type) {
         case Gdk.EventType.KEY_PRESS:
-            type = Wevp.EventType.KEY_PRESS;
+            type = DodoProto.EventType.KEY_PRESS;
             break;
         case Gdk.EventType.KEY_RELEASE:
-            type = Wevp.EventType.KEY_RELEASE;
+            type = DodoProto.EventType.KEY_RELEASE;
             break;
         default:
             return false;
@@ -86,22 +86,22 @@ public class View : Gtk.EventBox {
     }
 
     private bool on_button_event(Gdk.EventButton event) {
-        Wevp.EventType type;
+        DodoProto.EventType type;
         switch (event.type) {
         case Gdk.EventType.BUTTON_PRESS:
-            type = Wevp.EventType.MOUSE_PRESS;
+            type = DodoProto.EventType.MOUSE_PRESS;
             break;
         case Gdk.EventType.BUTTON_RELEASE:
-            type = Wevp.EventType.MOUSE_RELEASE;
+            type = DodoProto.EventType.MOUSE_RELEASE;
             break;
         case Gdk.EventType.DOUBLE_BUTTON_PRESS:
-            type = Wevp.EventType.MOUSE_DOUBLE_CLICK;
+            type = DodoProto.EventType.MOUSE_DOUBLE_CLICK;
             break;
         default:
             return false;
         }
         grab_focus();
-        canvas.send_mouse_event(type, (Wevp.MouseButton) event.button, Keyboard.serialize_modifiers(event.state), event.x, event.y, event.x, event.y, event.x_root, event.y_root);
+        canvas.send_mouse_event(type, (DodoProto.MouseButton) event.button, Keyboard.serialize_modifiers(event.state), event.x, event.y, event.x, event.y, event.x_root, event.y_root);
         return false;
     }
 
@@ -119,24 +119,24 @@ public class View : Gtk.EventBox {
     }
 
     private bool on_motion_notify_event(Gdk.EventMotion event) {
-        canvas.send_mouse_event(Wevp.EventType.MOUSE_MOVE, (Wevp.MouseButton) 0, Keyboard.serialize_modifiers(event.state), event.x, event.y, event.x, event.y, event.x_root, event.y_root);
+        canvas.send_mouse_event(DodoProto.EventType.MOUSE_MOVE, (DodoProto.MouseButton) 0, Keyboard.serialize_modifiers(event.state), event.x, event.y, event.x, event.y, event.x_root, event.y_root);
         return false;
     }
 
     private bool on_scroll_event(Gdk.EventScroll event) {
-        Wevp.EventType type;
+        DodoProto.EventType type;
         switch (event.direction) {
         case Gdk.ScrollDirection.UP:
-            type = Wevp.EventType.SCROLL_UP;
+            type = DodoProto.EventType.SCROLL_UP;
             break;
         case Gdk.ScrollDirection.DOWN:
-            type = Wevp.EventType.SCROLL_DOWN;
+            type = DodoProto.EventType.SCROLL_DOWN;
             break;
         case Gdk.ScrollDirection.LEFT:
-            type = Wevp.EventType.SCROLL_LEFT;
+            type = DodoProto.EventType.SCROLL_LEFT;
             break;
         case Gdk.ScrollDirection.RIGHT:
-            type = Wevp.EventType.SCROLL_RIGHT;
+            type = DodoProto.EventType.SCROLL_RIGHT;
             break;
         default:
             return false;
@@ -146,13 +146,13 @@ public class View : Gtk.EventBox {
     }
 
     private bool on_crossing_event(Gdk.EventCrossing event) {
-        Wevp.EventType type;
+        DodoProto.EventType type;
         switch (event.type) {
         case Gdk.EventType.ENTER_NOTIFY:
-            type = Wevp.EventType.ENTER;
+            type = DodoProto.EventType.ENTER;
             break;
         case Gdk.EventType.LEAVE_NOTIFY:
-            type = Wevp.EventType.LEAVE;
+            type = DodoProto.EventType.LEAVE;
             break;
         default:
             return false;
@@ -183,4 +183,4 @@ public class View : Gtk.EventBox {
     }
 }
 
-} // namespace Wevf
+} // namespace Dodo

@@ -2,10 +2,10 @@ from enum import IntFlag
 
 from PySide2.QtCore import QEvent, Qt, QPoint
 
-from wl_protocols.wevp_embed import WevpView
+from wl_protocols.dodo import DodoProtoView
 
-EventType = WevpView.event_type
-MouseButton = WevpView.mouse_button
+EventType = DodoProtoView.event_type
+MouseButton = DodoProtoView.mouse_button
 
 FOCUS_EVENTS = {
     EventType.focus_in: QEvent.FocusIn,

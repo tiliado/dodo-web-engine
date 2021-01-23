@@ -1,6 +1,6 @@
 using GL;
 
-namespace Wevf {
+namespace Dodo {
 
 public errordomain Error {
     FOO,
@@ -39,7 +39,7 @@ void main()
 
 public class Canvas : Gtk.GLArea {
     private const int ICON_SIZE = 256;
-    private static Wevp.ViewInterface impl = {
+    private static DodoProto.ViewInterface impl = {
         Canvas.change_cursor
     };
     public uint frames_per_second {get; private set; default = 0;}
@@ -50,7 +50,7 @@ public class Canvas : Gtk.GLArea {
     private uint resize_timeout_id = 0;
     private unowned Display display;
     public unowned Wl.Client? client;
-    public unowned Wevp.View? view;
+    public unowned DodoProto.View? view;
     private GLuint gl_program = 0;
     private GLuint gl_element_buffer = 0;
     private GLuint gl_vertex_buffer = 0;
@@ -98,14 +98,14 @@ public class Canvas : Gtk.GLArea {
 
     public signal void cursor_changed(string? name);
 
-    public void attach_view(Wl.Client? client, Wevp.View view, Surface surface) {
+    public void attach_view(Wl.Client? client, DodoProto.View view, Surface surface) {
         this.serial = 0;
         this.client = client;
         this.view = view;
         this.surface = surface;
         view.set_implementation(&Canvas.impl, this, null);
         set_surface(surface);
-        view.send_focus_event(last_focus_event ? Wevp.EventType.FOCUS_IN : Wevp.EventType.FOCUS_OUT);
+        view.send_focus_event(last_focus_event ? DodoProto.EventType.FOCUS_IN : DodoProto.EventType.FOCUS_OUT);
     }
 
     public void set_surface(Surface? surface) {
@@ -157,7 +157,7 @@ public class Canvas : Gtk.GLArea {
         display.dispatch();
     }
 
-    public bool send_key_event(Wevp.EventType type, string name, uint modifiers, uint keyval, uint keycode, uint native_modifiers, string? text) {
+    public bool send_key_event(DodoProto.EventType type, string name, uint modifiers, uint keyval, uint keycode, uint native_modifiers, string? text) {
         if (view != null) {
             view.send_key_event(type, name, modifiers, keyval, keycode, native_modifiers, text);
             return true;
@@ -169,13 +169,13 @@ public class Canvas : Gtk.GLArea {
         last_focus_event = has_focus;
         
         if (view != null) {
-            view.send_focus_event(has_focus ? Wevp.EventType.FOCUS_IN : Wevp.EventType.FOCUS_OUT);
+            view.send_focus_event(has_focus ? DodoProto.EventType.FOCUS_IN : DodoProto.EventType.FOCUS_OUT);
             return true;
         }
         return false;
     }
 
-    public bool send_mouse_event(Wevp.EventType type, Wevp.MouseButton mouse, uint modifiers, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
+    public bool send_mouse_event(DodoProto.EventType type, DodoProto.MouseButton mouse, uint modifiers, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
         if (view != null) {
             view.send_mouse_event(type, mouse, modifiers, local_x, local_y, window_x, window_y, screen_x, screen_y);
             return true;
@@ -183,7 +183,7 @@ public class Canvas : Gtk.GLArea {
         return false;
     }
 
-    public bool send_scroll_event(Wevp.EventType type, uint modifiers, double delta_x, double delta_y, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
+    public bool send_scroll_event(DodoProto.EventType type, uint modifiers, double delta_x, double delta_y, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
         if (view != null) {
             view.send_scroll_event(type, modifiers, delta_x, delta_y, local_x, local_y, window_x, window_y, screen_x, screen_y);
             return true;
@@ -192,7 +192,7 @@ public class Canvas : Gtk.GLArea {
         
     }
 
-    public bool send_crossing_event(Wevp.EventType type, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
+    public bool send_crossing_event(DodoProto.EventType type, double local_x, double local_y, double window_x, double window_y, double screen_x, double screen_y) {
         if (view != null) {
             view.send_crossing_event(type, local_x, local_y, window_x, window_y, screen_x, screen_y);
             return true;
@@ -200,7 +200,7 @@ public class Canvas : Gtk.GLArea {
         return false;
     }
 
-    private static void change_cursor(Wl.Client client, Wevp.View wl_view, string? name) {
+    private static void change_cursor(Wl.Client client, DodoProto.View wl_view, string? name) {
         unowned Canvas? self = (Canvas) wl_view.get_user_data();
         self.cursor_changed(name);
     }

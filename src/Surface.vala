@@ -1,6 +1,6 @@
 using GL;
 
-namespace Wevf {
+namespace Dodo {
 
 public class Surface : GLib.Object {
     private const int CALLBACK_VERSION = 1;
@@ -197,4 +197,4 @@ public class Surface : GLib.Object {
     }
 }
 
-} // namespace Wevf
+} // namespace Dodo

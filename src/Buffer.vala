@@ -1,6 +1,6 @@
 using GL;
 
-namespace Wevf {
+namespace Dodo {
 
 public class Buffer : GLib.Object {
     private uint id;
@@ -141,4 +141,4 @@ public class Buffer : GLib.Object {
 }
 
 
-} // namespace Wevf
+} // namespace Dodo

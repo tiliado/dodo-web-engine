@@ -1,4 +1,4 @@
-namespace Wevf {
+namespace Dodo {
 
 public class Display: GLib.Object {
     public Wl.Display? wl_display;
@@ -109,4 +109,4 @@ public class Display: GLib.Object {
     }
 }
 
-} // namespace Wevf
+} // namespace Dodo
