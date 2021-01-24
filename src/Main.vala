@@ -36,6 +36,7 @@ void main(string[] args) {
     });
 
     var canvas = display.embedder.create_canvas();
+    canvas.url = "https://bitmovin.com/demos/drm";
     var view = new View(canvas);
     view.show();
     window.add(view);

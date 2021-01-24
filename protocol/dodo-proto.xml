@@ -35,6 +35,7 @@
       <arg name="width" type="uint" summary="new width in virtual pixels - consult scale factor"/>
       <arg name="height" type="uint" summary="new height in virtual pixels - consult scale factor"/>
       <arg name="scale" type="uint" summary="scale factor"/>
+      <arg name="url" type="string" summary="url"/>
     </event>
 
   </interface>

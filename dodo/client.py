@@ -112,10 +112,11 @@ class Client:
         )
         self.wl_display.flush()
 
-    def on_view_requested(self, embedder, serial, width, height, scale):
+    def on_view_requested(self, embedder, serial, width, height, scale, url):
         print("Request new view", serial, width, height, scale)
         item = self.component.create()
-        item.setProperty("url", "https://bitmovin.com/demos/drm")
+        if url:
+            item.setProperty("url", url)
         self.create_view(serial, width, height, scale, item)
 
     @Slot()

@@ -64,7 +64,7 @@ public class Embedder : GLib.Object {
         uint scale = (uint) canvas.scale_factor;
         debug("Window %u×%u factor %u.", width, height, scale);
         canvas.serial = display.wl_display.next_serial();
-        bound[client].send_view_requested(canvas.serial, width, height, scale);
+        bound[client].send_view_requested(canvas.serial, width, height, scale, canvas.url);
     }
 
     private static void bind(Wl.Client client, void *data, uint version, uint id) {

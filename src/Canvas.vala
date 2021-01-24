@@ -43,6 +43,7 @@ public class Canvas : Gtk.GLArea {
         Canvas.change_cursor
     };
     public uint frames_per_second {get; private set; default = 0;}
+    public string url {get; set; default = "";}
     public uint serial;
     public uint width;
     public uint height;

@@ -25,7 +25,7 @@ public class Embedder: Wl.Resource {
     [CCode(cname="wl_resource_create")]
     public static unowned Embedder create(Wl.Client client, ref Wl.Interface ifce, int version, uint id);
     public void send_ping(uint serial);
-    public void send_view_requested(uint serial, uint width, uint height, uint scale);
+    public void send_view_requested(uint serial, uint width, uint height, uint scale, string url);
 }
 
 [CCode(cname="struct wl_resource", free_function="wl_resource_destroy")]
