@@ -2,7 +2,7 @@
 # Licensed under BSD-2-Clause license - see file LICENSE.
 import os
 
-from PySide2.QtCore import QUrl
+from PySide2.QtCore import QUrl, Slot
 from PySide2.QtGui import QGuiApplication
 from PySide2.QtWebEngine import QtWebEngine
 
@@ -21,11 +21,9 @@ class WebEngine:
         self.id = id
         self.app = app
         self.qml_view = QUrl(os.fspath(get_data_path("webview.qml")))
-        client = Client(id, self.qml_view)
-        client.connect()
-        client.attach()
-        client.wl_display.dispatch()
-
+        self.client = Client(id, self.qml_view)
+        self.client.disconnected.connect(self.on_disconnected)
+        self.client.start()
 
     @classmethod
     def initialize(cls):
@@ -35,3 +33,8 @@ class WebEngine:
             initialize_gl()
             cls._initialized = True
 
+    @Slot()
+    def on_disconnected(self):
+        self.client.disconnected.disconnect(self.on_disconnected)
+        print("quit")
+        self.app.quit()

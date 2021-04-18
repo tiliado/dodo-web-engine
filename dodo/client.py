@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Union
 
-from PySide2.QtCore import QUrl, Slot, QSocketNotifier
+from PySide2.QtCore import QUrl, Slot, QSocketNotifier, QObject, Signal
 from PySide2.QtGui import QSurfaceFormat, QOpenGLContext, QOffscreenSurface
 from pywayland.client import Display
 
@@ -18,8 +18,11 @@ SHM_FORMAT = {
 }
 
 
-class Client:
+class Client(QObject):
+    disconnected = Signal()
+
     def __init__(self, display: Union[str, int], qml_view: QUrl, gl_context: QOpenGLContext = None):
+        super().__init__()
         self.qml_view = qml_view
         self.display = display
         self.wl_display = Display(display)
@@ -29,9 +32,9 @@ class Client:
         self.views = {}
         self.fd_notifier = None
         self.engine = Engine()
-        self.component = Component(self.engine, qml_view)
-        self.component.load()
-        self.component.relatedCreated.connect(self.on_related_created)
+        self.component = None
+        self.qml_view = qml_view
+        self.connected = False
 
         if gl_context is None:
             gl_context = QOpenGLContext()
@@ -47,11 +50,18 @@ class Client:
 
     def __del__(self):
         print("Disconnecting from", self.display)
-        self.wl_display.disconnect()
+        if self.connected:
+            self.stop()
 
-    def connect(self):
+    def start(self) -> None:
+        assert not self.connected
         print("Connecting to", self.display)
         self.wl_display.connect()
+        self.connected = True
+
+        self.component = Component(self.engine, self.qml_view)
+        self.component.load()
+        self.component.relatedCreated.connect(self.on_related_created)
 
         registry = self.wl_display.get_registry()
         registry.dispatcher["global"] = self.on_global_object_added
@@ -60,23 +70,49 @@ class Client:
         self.wl_display.dispatch(block=True)
         self.wl_display.roundtrip()
 
-    def attach(self) -> bool:
-        if self.fd_notifier:
-            return False
-
         self.fd_notifier = QSocketNotifier(self.wl_display.get_fd(), QSocketNotifier.Read)
         self.fd_notifier.activated.connect(self.on_can_read_wl_data)
-        return True
+
+        self.wl_display.dispatch()
+
+    def stop(self) -> None:
+        assert self.connected
+        self.connected = False
+
+        self.component.relatedCreated.disconnect(self.on_related_created)
+        self.fd_notifier.activated.disconnect(self.on_can_read_wl_data)
+
+        registry = self.wl_display.get_registry()
+        registry.dispatcher["global"] = None
+        registry.dispatcher["global_remove"] = None
+
+        if self.wl_shm:
+            self.wl_shm.dispatcher["format"] = None
+        if self.wl_embedder:
+            self.wl_embedder.dispatcher["ping"] = None
+            self.wl_embedder.dispatcher["view_requested"] = None
+
+        self.wl_compositor = None
+        self.wl_shm = None
+        self.wl_embedder = None
+
+        self.wl_display.disconnect()
+        self.disconnected.emit()
+
+        # TODO: clear views
+
+        self.fd_notifier = None
+        self.component = None
+        self.engine = None
 
     @Slot()
     def on_can_read_wl_data(self, *args):
-        self.wl_display.read()
-        self.wl_display.dispatch()
-        self.wl_display.flush()
-
-    def run(self):
-        while self.wl_display.dispatch(block=True) != -1:
-            pass
+        try:
+            self.wl_display.read()
+            self.wl_display.dispatch()
+            self.wl_display.flush()
+        except RuntimeError:
+            self.stop()
 
     def on_global_object_added(self, registry, object_id, interface, version):
         print("Global object added:", registry, object_id, interface, version)
