@@ -28,10 +28,10 @@ run-server: all
 	G_MESSAGES_DEBUG=all build/wayland-embed
 
 run-client: all
-	PYTHONPATH=build:. python3 dodo/qtwebengine.py $(ARGS)
+	PYTHONPATH=build:. python3 -m dodo default $(ARGS)
 
 gdb-client: all
-	PYTHONPATH=build:. gdb -ex run --args python3 dodo/qtwebengine.py $(ARGS)
+	PYTHONPATH=build:. gdb -ex run --args python3 -m dodo default $(ARGS)
 
 gdb-server: all
 	G_MESSAGES_DEBUG=all gdb -ex run --args build/wayland-embed $(ARGS)
