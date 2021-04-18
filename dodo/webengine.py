@@ -3,7 +3,7 @@
 import os
 
 from PySide2.QtCore import QUrl, Slot
-from PySide2.QtGui import QGuiApplication
+from PySide2.QtGui import QGuiApplication, QSurfaceFormat, QOpenGLContext
 from PySide2.QtWebEngine import QtWebEngine
 
 from dodo.client import Client
@@ -21,7 +21,12 @@ class WebEngine:
         self.id = id
         self.app = app
         self.qml_view = QUrl(os.fspath(get_data_path("webview.qml")))
-        self.client = Client(id, self.qml_view)
+
+        gl_context = QOpenGLContext()
+        gl_context.setFormat(QSurfaceFormat.defaultFormat())
+        gl_context.create()
+
+        self.client = Client(id, self.qml_view, gl_context)
         self.client.disconnected.connect(self.on_disconnected)
         self.client.start()
 

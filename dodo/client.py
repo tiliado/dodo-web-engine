@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Union
 
 from PySide2.QtCore import QUrl, Slot, QSocketNotifier, QObject, Signal
-from PySide2.QtGui import QSurfaceFormat, QOpenGLContext, QOffscreenSurface
+from PySide2.QtGui import QOpenGLContext, QOffscreenSurface
 from pywayland.client import Display
 
 from dodo.qml import Engine, Component
@@ -21,7 +21,7 @@ SHM_FORMAT = {
 class Client(QObject):
     disconnected = Signal()
 
-    def __init__(self, display: Union[str, int], qml_view: QUrl, gl_context: QOpenGLContext = None):
+    def __init__(self, display: Union[str, int], qml_view: QUrl, gl_context: QOpenGLContext):
         super().__init__()
         self.qml_view = qml_view
         self.display = display
@@ -35,14 +35,9 @@ class Client(QObject):
         self.component = None
         self.qml_view = qml_view
         self.connected = False
-
-        if gl_context is None:
-            gl_context = QOpenGLContext()
-            gl_context.setFormat(QSurfaceFormat.defaultFormat())
-            gl_context.create()
+        self.gl_context = gl_context
 
         assert gl_context.isOpenGLES()
-        self.gl_context = gl_context
         surface = QOffscreenSurface()
         surface.setFormat(gl_context.format())
         surface.create()
