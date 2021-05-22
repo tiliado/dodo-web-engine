@@ -18,7 +18,7 @@ void main(string[] args) {
     display.init_embedder();
 
     var window = new Gtk.Window();
-    window.title = "Wayland Embedded View Framework";
+    window.title = "DodoWebEngine for Nuvola Player";
     window.set_default_size(400, 300);
     window.show_all();
 
@@ -30,7 +30,7 @@ void main(string[] args) {
 
     display.embedder.unclaimed_canvas.connect((canvas) => {
         var w = new Gtk.Window();
-        w.title = "Wayland Embedded View Framework";
+        w.title = "DodoWebEngine for Nuvola Player";
         w.add(new View(canvas));
         w.show_all();
     });
